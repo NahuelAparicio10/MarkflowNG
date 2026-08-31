@@ -56,3 +56,10 @@ $RECYCLE.BIN/
 # ---- Misc ----
 *.tsbuildinfo
 .eslintcache
+
+# ---- Tauri lock (kept) / generated ----
+src-tauri/gen/schemas/
+
+# ---- Local AI / index ----
+*.sqlite
+*.sqlite-journal
