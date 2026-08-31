@@ -144,8 +144,19 @@ additive and lands behind no flag.
 
 ## Open Questions
 
-- Should `serialize` guarantee a trailing newline unconditionally? remark does by
-  default; some real files lack one. Leaning yes (POSIX convention, cleaner git
-  diffs), to be settled against the fixture corpus during implementation.
-- Should the opaque preserved node be one node type, or one per unsupported mdast
-  type? Starting with one; revisit if the reader needs to distinguish them.
+Both resolved during implementation.
+
+- ~~Should `serialize` guarantee a trailing newline unconditionally?~~ **Resolved:**
+  remark's default is kept, verified against the corpus. A non-empty document ends
+  in exactly one newline; an empty document serializes to the empty string. This
+  matches POSIX convention and produces clean git diffs, so no custom
+  normalization was added. Recorded in `docs/architecture.md`.
+- ~~Should the opaque preserved node be one node type, or one per unsupported mdast
+  type?~~ **Resolved: two, split on block versus inline.** Not the split this
+  question anticipated. ProseMirror's block/inline distinction is a property of the
+  node type — a node cannot be both — so an unsupported table and an unsupported
+  emphasis span cannot share a type. `preserved` and `preservedInline` are
+  otherwise identical, and both return their subtree verbatim on the way back to
+  mdast. This is a schema constraint rather than a design preference, so it does
+  not reopen the one-versus-many question for future unsupported types: they
+  continue to share these two nodes. Recorded in `docs/architecture.md`.
