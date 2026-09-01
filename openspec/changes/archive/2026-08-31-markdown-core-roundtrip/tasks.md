@@ -71,4 +71,4 @@
 - [x] 6.3 Run `npm run lint` and fix all findings
 - [x] 6.4 Run `npm run typecheck` and fix all findings
 - [x] 6.5 Run `npm run test` and confirm every round-trip invariant is green
-- [ ] 6.6 Confirm CI passes on push
+- [x] 6.6 Confirm CI passes on push
