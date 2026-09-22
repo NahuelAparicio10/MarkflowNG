@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "./ui/typography.css";
+@import "./reader/reader.css";
 
 :root {
 	color-scheme: light dark;

@@ -1,0 +1,84 @@
+/*
+ * Shared typography for the reader and, from phase 2 onward, the editor.
+ *
+ * Neither mode may define its own font family, font size, heading scale, line
+ * height, paragraph spacing or list indentation — see docs/architecture.md.
+ * Everything reader-specific (tables, code blocks, blockquotes, raw HTML) lives
+ * in src/reader/reader.css instead, since the editor schema does not model
+ * those yet and this file must stay something both modes can adopt as-is.
+ */
+
+.markflow-prose {
+	--markflow-font-family:
+		-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+	--markflow-font-size: 1rem;
+	--markflow-line-height: 1.7;
+	--markflow-paragraph-spacing: 1em;
+	--markflow-list-indent: 1.5em;
+
+	font-family: var(--markflow-font-family);
+	font-size: var(--markflow-font-size);
+	line-height: var(--markflow-line-height);
+	max-width: 68ch;
+	margin-inline: auto;
+	padding: 2rem 1.5rem;
+}
+
+.markflow-prose h1,
+.markflow-prose h2,
+.markflow-prose h3,
+.markflow-prose h4,
+.markflow-prose h5,
+.markflow-prose h6 {
+	font-weight: 600;
+	line-height: 1.25;
+	margin-top: 1.6em;
+	margin-bottom: 0.6em;
+}
+
+.markflow-prose h1:first-child,
+.markflow-prose h2:first-child,
+.markflow-prose h3:first-child,
+.markflow-prose h4:first-child,
+.markflow-prose h5:first-child,
+.markflow-prose h6:first-child {
+	margin-top: 0;
+}
+
+.markflow-prose h1 {
+	font-size: 2em;
+}
+
+.markflow-prose h2 {
+	font-size: 1.6em;
+}
+
+.markflow-prose h3 {
+	font-size: 1.3em;
+}
+
+.markflow-prose h4 {
+	font-size: 1.1em;
+}
+
+.markflow-prose h5 {
+	font-size: 1em;
+}
+
+.markflow-prose h6 {
+	font-size: 0.9em;
+}
+
+.markflow-prose p {
+	margin-block: var(--markflow-paragraph-spacing);
+}
+
+.markflow-prose ul,
+.markflow-prose ol {
+	margin-block: var(--markflow-paragraph-spacing);
+	padding-inline-start: var(--markflow-list-indent);
+}
+
+.markflow-prose li {
+	margin-block: 0.25em;
+}
