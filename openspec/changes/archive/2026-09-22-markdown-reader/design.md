@@ -128,8 +128,10 @@ persisted data exists to migrate.
 
 ## Open Questions
 
-- Should the outline be a persistent side panel or a toggle? Leaning toggle, to
-  keep the reading column centered on narrow windows.
+- ~~Should the outline be a persistent side panel or a toggle?~~ **Resolved:
+  toggle.** `App.tsx` shows the outline as a dismissible side panel behind a
+  header button, off by default, so the reading column stays centered on
+  narrow windows and a document with no headings costs no layout space.
 - Does the raw view need to be editable as a plain textarea escape hatch? Deferred;
   it conflicts with "never see Markdown syntax" as a default but may be a useful
   power-user affordance.

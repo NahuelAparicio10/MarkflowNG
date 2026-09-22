@@ -24,6 +24,13 @@ vista previa del explorador y la capa de IA.
    diff vacío en git. Cada nodo nuevo del esquema amplía el mapeo y sus tests.
 4. **Un solo camino de renderizado.** El visor y la vista previa del explorador
    reutilizan el mismo parser del core.
+5. **Tipografía compartida.** `src/ui/typography.css` es la única fuente de
+   familia de fuente, escala de tamaño, escala de encabezados, interlineado,
+   espaciado de párrafo y sangría de listas, consumida por el visor y, desde
+   la fase 2, por el editor. Ninguno de los dos modos redefine estas reglas;
+   lo específico de cada modo (caret, selección, toolbar en el editor; tablas,
+   HTML crudo, bloques de código en el visor) vive en hojas de estilo locales
+   como `src/reader/reader.css`.
 
 ## Capas
 
