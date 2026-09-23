@@ -1,0 +1,46 @@
+/*
+ * Editor-only presentation. Typography shared with the reader lives in
+ * src/ui/typography.css; this file covers what only makes sense once the
+ * document is editable.
+ */
+
+/* editorProps.attributes puts both classes on Tiptap's own content root, not
+   on a wrapping element — so this must not be a descendant selector. */
+.markflow-editor.ProseMirror {
+	outline: none;
+}
+
+/* Placeholder for content outside the editable schema — see the `preserved`
+   and `preservedInline` node specs in src/core/schema/nodes.ts. */
+.markflow-editor .markflow-preserved,
+.markflow-editor .markflow-preserved-inline {
+	display: block;
+	margin-block: var(--markflow-paragraph-spacing, 1em);
+	border: 1px dashed currentColor;
+	border-radius: 4px;
+	padding: 0.5em 0.75em;
+	opacity: 0.6;
+	font-size: 0.85em;
+	cursor: default;
+}
+
+.markflow-editor .markflow-preserved-inline {
+	display: inline-block;
+	margin-block: 0;
+	padding: 0 0.4em;
+}
+
+.markflow-save-recovery {
+	margin: 1rem 1.5rem 0;
+	padding: 0.75rem 1rem;
+	border: 1px solid currentColor;
+	border-radius: 4px;
+	font-size: 0.85rem;
+}
+
+.markflow-save-recovery pre {
+	margin-top: 0.5rem;
+	max-height: 12rem;
+	overflow: auto;
+	white-space: pre-wrap;
+}

@@ -12,6 +12,7 @@ function resetStore(): void {
 		mode: "reader",
 		outline: { entries: [], idsByHeading: new Map() },
 		error: null,
+		dirty: false,
 	});
 }
 
@@ -37,7 +38,7 @@ describe("session store", () => {
 		expect(useSessionStore.getState().mode).toBe("reader");
 	});
 
-	it("cycleMode toggles between reader and raw, skipping the unreachable editor mode", () => {
+	it("cycleMode visits reader, raw and editor in order, then wraps around", () => {
 		resetStore();
 
 		expect(useSessionStore.getState().mode).toBe("reader");
@@ -46,7 +47,29 @@ describe("session store", () => {
 		expect(useSessionStore.getState().mode).toBe("raw");
 
 		useSessionStore.getState().cycleMode();
+		expect(useSessionStore.getState().mode).toBe("editor");
+
+		useSessionStore.getState().cycleMode();
 		expect(useSessionStore.getState().mode).toBe("reader");
+	});
+
+	it("setDirty replaces the dirty flag", () => {
+		resetStore();
+		expect(useSessionStore.getState().dirty).toBe(false);
+
+		useSessionStore.getState().setDirty(true);
+		expect(useSessionStore.getState().dirty).toBe(true);
+
+		useSessionStore.getState().setDirty(false);
+		expect(useSessionStore.getState().dirty).toBe(false);
+	});
+
+	it("opening a document clears the dirty flag", () => {
+		resetStore();
+		useSessionStore.getState().setDirty(true);
+
+		useSessionStore.getState().openDocument("/docs/example.md", parseMarkdown("# Title\n"));
+		expect(useSessionStore.getState().dirty).toBe(false);
 	});
 
 	it("opening a document resets the mode to reader and derives the outline", () => {
