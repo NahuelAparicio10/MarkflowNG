@@ -144,10 +144,50 @@ any workspace.
 
 ## Open Questions
 
-- Should the workspace root persist across restarts and reopen automatically?
-  Probably yes, along with the open tabs; needs a small settings-persistence
-  mechanism that does not exist yet.
-- Should non-Markdown files appear in the tree? Leaning toward showing them greyed
-  out, so the tree reflects the real folder, with only `.md` files openable.
-- What is the debounce window for coalescing watcher events? To be measured against
-  a real git checkout.
+- ~~Should the workspace root persist across restarts and reopen automatically?~~
+  **Deferred to a later change.** Still wanted, along with the open tabs, but it
+  needs more than the settings-persistence mechanism noted here. Access to the
+  workspace comes from the fs scope the folder dialog grants at runtime, and
+  that grant does not survive a restart. Reopening the root without the dialog
+  would fail both the frontend's file reads and the scope check the scan and
+  watch commands make. Doing it properly means adding
+  `tauri-plugin-persisted-scope` (a new dependency) or re-granting scope from
+  Rust for a remembered root, plus deciding what happens when the folder has
+  moved. That deserves its own proposal rather than a tail on this one.
+- ~~Should non-Markdown files appear in the tree?~~ **Resolved: yes, greyed out.**
+  The scan lists every file so the tree reflects the real folder, and flags which
+  are Markdown (`.md`, `.markdown`); only those are openable, previewable and
+  offered by quick open. `.git` and `node_modules` are never listed or descended
+  into, and neither is the editor's own `*.markflow-tmp` save file.
+- ~~What is the debounce window for coalescing watcher events?~~ **Resolved:
+  250 ms of quiet, capped at 2 s per batch.** Measured on Windows 10 with
+  `measure_git_checkout_event_spread` in `src-tauri/src/watcher.rs`: a checkout
+  switching 2,000 Markdown files produced ~8,000 raw events over 2.0–2.4 s, with
+  the largest gap between consecutive events 113 ms across five runs. 50 and
+  100 ms windows split two of the five checkouts; 250 ms split none. The 2 s cap
+  keeps the tree updating during long operations, so that checkout arrives as two
+  batches instead of thousands of messages.
+
+## Implementation Notes
+
+- **Watcher built on `notify` directly, not on the fs plugin's `watch` API.** The
+  plugin's watcher (`tauri-plugin-fs` 2.5.1, `watcher.rs`) sends every debounced
+  event to the frontend as a separate channel message, which cannot meet the
+  "Bulk change is coalesced" requirement. The Rust watcher uses `notify`, the
+  crate the plugin's `watch` feature is built on (already in the lockfile through
+  it), with its own trailing-edge debounce and per-path coalescing. This matches
+  D1 ("the watcher is a Rust task emitting events") more closely than task 3.1's
+  wording did.
+- **Scan payloads are chunked.** The listing crosses the bridge in chunks of 500
+  entries over a Tauri channel, not one message per entry. A folder under 500
+  entries arrives as one payload, and a larger one fills in progressively (D8).
+- **Write permissions added to the capability.** `fs:default` grants only reads,
+  so the editor's save path (`writeTextFile` plus `rename`, and `remove` to clean
+  up a failed temp file) was refused inside the real Tauri app. The e2e suite
+  never noticed, because it runs against the in-memory hatch. This change depends
+  on writes working, so `src-tauri/capabilities/default.json` now allows those
+  three commands. They are still confined to the fs scope, i.e. to files and
+  folders the user picked in a dialog.
+- **Scan and watch commands honour the fs scope.** They refuse a root the fs
+  plugin's scope does not allow, i.e. one the user did not pick in the folder
+  dialog, so they never reach further than the plugin itself would.
