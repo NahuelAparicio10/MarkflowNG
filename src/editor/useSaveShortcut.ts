@@ -1,8 +1,10 @@
 import { useEffect } from "react";
+import { matchesShortcut } from "./shortcuts";
 
 /**
  * Ctrl/Cmd+S saves immediately, bypassing the autosave debounce — see task
- * 3.3 and the "Explicit save is immediate" spec scenario.
+ * 3.3 and the "Explicit save is immediate" spec scenario. The binding itself is
+ * declared in the shortcut table.
  */
 export function useSaveShortcut(onSave: () => void, enabled: boolean): void {
 	useEffect(() => {
@@ -11,8 +13,7 @@ export function useSaveShortcut(onSave: () => void, enabled: boolean): void {
 		}
 
 		function handleKeyDown(event: KeyboardEvent) {
-			const isModifierPressed = event.metaKey || event.ctrlKey;
-			if (!isModifierPressed || event.key.toLowerCase() !== "s") {
+			if (!matchesShortcut(event, "save")) {
 				return;
 			}
 

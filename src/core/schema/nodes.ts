@@ -45,6 +45,133 @@ const heading: NodeSpec = {
 	},
 };
 
+/**
+ * One list type for both bulleted and numbered lists, matching mdast's single
+ * `list` node with an `ordered` flag. Two ProseMirror types would each need to
+ * map back to the same mdast type, which the one-to-one mapping registry
+ * cannot express, and toggling a list's kind would become a node replacement
+ * rather than an attribute change.
+ */
+const list: NodeSpec = {
+	attrs: {
+		ordered: { default: false },
+		// The first number of an ordered list. `null` for bulleted lists, as in
+		// mdast.
+		start: { default: null },
+		// Loose (blank lines between items) versus tight. Carried so that a
+		// list keeps its form through a round-trip.
+		spread: { default: false },
+	},
+	content: "listItem+",
+	group: "block",
+	parseDOM: [
+		{ tag: "ul", attrs: { ordered: false, start: null } },
+		{
+			tag: "ol",
+			getAttrs(dom) {
+				const start = dom.getAttribute("start");
+				return { ordered: true, start: start === null ? 1 : Number(start) };
+			},
+		},
+	],
+	toDOM(node) {
+		if (node.attrs.ordered) {
+			return ["ol", { start: node.attrs.start as number | null }, 0];
+		}
+
+		return ["ul", 0];
+	},
+};
+
+/**
+ * A task item is a list item whose `checked` is a boolean rather than `null`,
+ * exactly as in mdast — see design decision D7. There is no task list type, so
+ * a list can mix task items and plain items without the mapping having to
+ * choose a list kind from its content.
+ */
+const listItem: NodeSpec = {
+	attrs: {
+		checked: { default: null },
+		spread: { default: false },
+	},
+	content: "block+",
+	defining: true,
+	parseDOM: [
+		{
+			tag: "li",
+			getAttrs(dom) {
+				const checked = dom.getAttribute("data-checked");
+				return { checked: checked === null ? null : checked === "true" };
+			},
+		},
+	],
+	toDOM(node) {
+		if (typeof node.attrs.checked !== "boolean") {
+			return ["li", 0];
+		}
+
+		// The content hole has to be the only child of its element, so the
+		// checkbox and the item's content sit in separate wrappers.
+		return [
+			"li",
+			{ class: "markflow-task-item", "data-checked": String(node.attrs.checked) },
+			[
+				"span",
+				{ class: "markflow-task-checkbox", contenteditable: "false" },
+				["input", node.attrs.checked ? { type: "checkbox", checked: "checked" } : { type: "checkbox" }],
+			],
+			["div", { class: "markflow-task-content" }, 0],
+		];
+	},
+};
+
+const blockquote: NodeSpec = {
+	content: "block+",
+	group: "block",
+	defining: true,
+	parseDOM: [{ tag: "blockquote" }],
+	toDOM() {
+		return ["blockquote", 0];
+	},
+};
+
+/**
+ * The language is a schema attribute mapping to the mdast `lang` field, not a
+ * class name on the rendered element — see design decision D6. `meta` is the
+ * rest of the fence's info string, carried so it is not lost on save.
+ */
+const codeBlock: NodeSpec = {
+	attrs: {
+		language: { default: null },
+		meta: { default: null },
+	},
+	content: "text*",
+	marks: "",
+	group: "block",
+	code: true,
+	defining: true,
+	parseDOM: [
+		{
+			tag: "pre",
+			preserveWhitespace: "full",
+			getAttrs(dom) {
+				return { language: dom.getAttribute("data-language") };
+			},
+		},
+	],
+	toDOM(node) {
+		return ["pre", { "data-language": node.attrs.language as string | null }, ["code", 0]];
+	},
+};
+
+const thematicBreak: NodeSpec = {
+	group: "block",
+	parseDOM: [{ tag: "hr" }],
+	toDOM() {
+		return ["hr"];
+	},
+};
+
 const text: NodeSpec = {
 	group: "inline",
 };
@@ -82,8 +209,23 @@ const preservedInline: NodeSpec = {
 };
 
 /**
- * The node set this change closes the round-trip over. Marks and the remaining
- * block types are registered by later changes; anything not modelled here
- * travels through a preservation node instead of being dropped.
+ * The node set the round-trip is closed over. Anything not modelled here —
+ * tables, images and frontmatter, until a later change — travels through a
+ * preservation node instead of being dropped.
+ *
+ * `paragraph` must stay the first block type: ProseMirror fills required block
+ * content with the first type in the group.
  */
-export const nodes = { doc, paragraph, heading, text, preserved, preservedInline };
+export const nodes = {
+	doc,
+	paragraph,
+	heading,
+	list,
+	listItem,
+	blockquote,
+	codeBlock,
+	thematicBreak,
+	text,
+	preserved,
+	preservedInline,
+};

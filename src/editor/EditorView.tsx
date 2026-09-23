@@ -1,10 +1,12 @@
 import { EditorContent, useEditor } from "@tiptap/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSessionStore } from "../store/session";
+import { useSettingsStore } from "../store/settings";
+import LinkEditor from "../ui/LinkEditor";
 import { createDebouncedAutosave } from "./autosave";
 import { AUTOSAVE_DEBOUNCE_MS } from "./constants";
 import { serializeDoc } from "./documentText";
-import { extensions } from "./extensions";
+import { createExtensions } from "./extensions";
 import { loadDocument } from "./loadDocument";
 import { saveDocument } from "./saveDocument";
 import { useSaveShortcut } from "./useSaveShortcut";
@@ -34,6 +36,18 @@ export default function EditorView({ filePath }: EditorViewProps) {
 	// A ref, not state: it must be current inside the debounced autosave
 	// callback without retriggering effects on every change.
 	const baselineRef = useRef<string>("");
+
+	const [linkEditorOpen, setLinkEditorOpen] = useState(false);
+
+	// Built once per mounted editor. The input-rules setting is read through the
+	// store on every keystroke rather than captured here, so toggling it takes
+	// effect without rebuilding the editor.
+	const [extensions] = useState(() =>
+		createExtensions({
+			isInputRulesEnabled: () => useSettingsStore.getState().inputRulesEnabled,
+			onOpenLink: () => setLinkEditorOpen(true),
+		}),
+	);
 
 	const editor = useEditor({
 		extensions,
@@ -170,6 +184,7 @@ export default function EditorView({ filePath }: EditorViewProps) {
 				</div>
 			) : null}
 			<EditorContent editor={editor} />
+			{linkEditorOpen && editor ? <LinkEditor editor={editor} onClose={() => setLinkEditorOpen(false)} /> : null}
 		</div>
 	);
 }

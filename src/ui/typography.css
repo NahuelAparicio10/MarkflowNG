@@ -3,9 +3,9 @@
  *
  * Neither mode may define its own font family, font size, heading scale, line
  * height, paragraph spacing or list indentation — see docs/architecture.md.
- * Everything reader-specific (tables, code blocks, blockquotes, raw HTML) lives
- * in src/reader/reader.css instead, since the editor schema does not model
- * those yet and this file must stay something both modes can adopt as-is.
+ * Block elements both modes render — task items, quotes, code and rules — are
+ * styled here too, so the reader and the editor cannot drift apart. What only
+ * the reader renders (tables, images, raw HTML) lives in src/reader/reader.css.
  */
 
 .markflow-prose {
@@ -81,4 +81,41 @@
 
 .markflow-prose li {
 	margin-block: 0.25em;
+}
+
+.markflow-prose li.markflow-task-item {
+	list-style: none;
+	margin-inline-start: calc(var(--markflow-list-indent, 1.5em) * -1);
+}
+
+.markflow-prose li.markflow-task-item input[type="checkbox"] {
+	margin-inline-end: 0.5em;
+}
+
+.markflow-prose blockquote {
+	margin-block: var(--markflow-paragraph-spacing, 1em);
+	padding-inline-start: 1em;
+	border-inline-start: 3px solid currentColor;
+	opacity: 0.85;
+}
+
+.markflow-prose pre {
+	margin-block: var(--markflow-paragraph-spacing, 1em);
+	padding: 0.75em 1em;
+	overflow-x: auto;
+	font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", monospace;
+	font-size: 0.9em;
+	line-height: 1.5;
+}
+
+.markflow-prose code {
+	font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", monospace;
+	font-size: 0.9em;
+}
+
+.markflow-prose hr {
+	margin-block: 2em;
+	border: none;
+	border-top: 1px solid currentColor;
+	opacity: 0.3;
 }

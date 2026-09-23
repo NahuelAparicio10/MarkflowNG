@@ -26,52 +26,58 @@
 
 ## 3. Editor extensions and shortcuts
 
-- [ ] 3.1 Register Tiptap extensions for every new mark and node, built on the core
+- [x] 3.1 Register Tiptap extensions for every new mark and node, built on the core
       schema specs
-- [ ] 3.2 Create `src/editor/shortcuts.ts` as the single declaration point for the
+- [x] 3.2 Create `src/editor/shortcuts.ts` as the single declaration point for the
       editor shortcut table
-- [ ] 3.3 Implement mark toggling with and without a selection
-- [ ] 3.4 Verify no shortcut collides with the operating system or the webview on
+- [x] 3.3 Implement mark toggling with and without a selection
+- [x] 3.4 Verify no shortcut collides with the operating system or the webview on
       Windows, and resolve any conflict in the shortcut table
-- [ ] 3.5 Implement Enter behavior in lists: continue on a non-empty item, exit on
+      (reviewed against the Windows/Edge/WebView2 shortcut lists and exercised in
+      Chromium via Playwright; not yet run inside a built Tauri/WebView2 binary.
+      Conflicts resolved: inline code is `Mod-Shift-e`, since `Mod-e` cycles view
+      modes; strikethrough is `Mod-Shift-x`, avoiding Edge's `Mod-Shift-s`)
+- [x] 3.5 Implement Enter behavior in lists: continue on a non-empty item, exit on
       an empty item, including inside nested lists
-- [ ] 3.6 Implement list indent and outdent
+- [x] 3.6 Implement list indent and outdent
 
 ## 4. Input rules
 
-- [ ] 4.1 Create `src/editor/inputRules/` with one rule module per element
-- [ ] 4.2 Implement rules for headings, bold, italic, strikethrough, inline code,
+- [x] 4.1 Create `src/editor/inputRules/` with one rule module per element
+- [x] 4.2 Implement rules for headings, bold, italic, strikethrough, inline code,
       bulleted and numbered list items, task items, blockquotes, code fences and
       horizontal rules
-- [ ] 4.3 Ensure each conversion is applied as a single transaction, so one undo
+- [x] 4.3 Ensure each conversion is applied as a single transaction, so one undo
       restores the literal typed text
-- [ ] 4.4 Suppress input rules inside code blocks
-- [ ] 4.5 Add the settings flag that disables automatic conversion, and honour it
-- [ ] 4.6 Write tests for the single-undo behavior and for suppression inside code
+- [x] 4.4 Suppress input rules inside code blocks
+- [x] 4.5 Add the settings flag that disables automatic conversion, and honour it
+- [x] 4.6 Write tests for the single-undo behavior and for suppression inside code
 
 ## 5. Links
 
-- [ ] 5.1 Build the link affordance in `src/ui/` for creating and editing a target
-- [ ] 5.2 Bind it to a shortcut; resolve the design.md open question on which key
-- [ ] 5.3 Implement paste-URL-over-selection to create a link
-- [ ] 5.4 Implement link removal preserving the text
-- [ ] 5.5 Write tests for create, edit target, paste-over-selection and remove
+- [x] 5.1 Build the link affordance in `src/ui/` for creating and editing a target
+- [x] 5.2 Bind it to a shortcut; resolve the design.md open question on which key
+- [x] 5.3 Implement paste-URL-over-selection to create a link
+- [x] 5.4 Implement link removal preserving the text
+- [x] 5.5 Write tests for create, edit target, paste-over-selection and remove
 
 ## 6. Preservation and parity
 
-- [ ] 6.1 Confirm the unhandled-node fallback is still registered and that tables,
+- [x] 6.1 Confirm the unhandled-node fallback is still registered and that tables,
       images and frontmatter still survive an edit-and-save cycle
-- [ ] 6.2 Extend the reader-and-editor parity corpus with every element added here
-- [ ] 6.3 Extend the reader renderer only where a new element revealed a gap
+- [x] 6.2 Extend the reader-and-editor parity corpus with every element added here
+- [x] 6.3 Extend the reader renderer only where a new element revealed a gap
+      (no gap found; the renderer already handled every element. Shared block
+      styles moved from `reader.css` to `typography.css` instead)
 
 ## 7. Verification
 
-- [ ] 7.1 Run the round-trip suite and confirm both invariants hold over the
+- [x] 7.1 Run the round-trip suite and confirm both invariants hold over the
       extended corpus
-- [ ] 7.2 Run `npm run lint` and fix all findings
-- [ ] 7.3 Run `npm run typecheck` and fix all findings
-- [ ] 7.4 Run `npm run test` and confirm green
-- [ ] 7.5 Add a Playwright e2e test covering typing with input rules, applying marks
+- [x] 7.2 Run `npm run lint` and fix all findings
+- [x] 7.3 Run `npm run typecheck` and fix all findings
+- [x] 7.4 Run `npm run test` and confirm green
+- [x] 7.5 Add a Playwright e2e test covering typing with input rules, applying marks
       by shortcut, and creating a link
-- [ ] 7.6 Record in `docs/architecture.md` whether the registry design held without
+- [x] 7.6 Record in `docs/architecture.md` whether the registry design held without
       changes to the mapping core, since this change is its first real test

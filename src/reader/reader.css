@@ -1,39 +1,9 @@
 /*
  * Reader-only presentation: node types the editor schema does not model yet
- * (tables, code fences, blockquotes, raw HTML) and layout for the reader
- * shell itself. Typography shared with the future editor lives in
- * src/ui/typography.css instead — see docs/architecture.md.
+ * (tables, images, raw HTML) and layout for the reader shell itself.
+ * Presentation shared with the editor — including lists, quotes, code and
+ * rules — lives in src/ui/typography.css instead; see docs/architecture.md.
  */
-
-.markflow-prose li.markflow-task-item {
-	list-style: none;
-	margin-inline-start: calc(var(--markflow-list-indent, 1.5em) * -1);
-}
-
-.markflow-prose li.markflow-task-item input[type="checkbox"] {
-	margin-inline-end: 0.5em;
-}
-
-.markflow-prose blockquote {
-	margin-block: var(--markflow-paragraph-spacing, 1em);
-	padding-inline-start: 1em;
-	border-inline-start: 3px solid currentColor;
-	opacity: 0.85;
-}
-
-.markflow-prose pre {
-	margin-block: var(--markflow-paragraph-spacing, 1em);
-	padding: 0.75em 1em;
-	overflow-x: auto;
-	font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", monospace;
-	font-size: 0.9em;
-	line-height: 1.5;
-}
-
-.markflow-prose code {
-	font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", monospace;
-	font-size: 0.9em;
-}
 
 .markflow-prose table {
 	margin-block: var(--markflow-paragraph-spacing, 1em);
@@ -46,13 +16,6 @@
 	border: 1px solid currentColor;
 	padding: 0.4em 0.6em;
 	text-align: left;
-}
-
-.markflow-prose hr {
-	margin-block: 2em;
-	border: none;
-	border-top: 1px solid currentColor;
-	opacity: 0.3;
 }
 
 .markflow-prose img {

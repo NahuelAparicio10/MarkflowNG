@@ -1,4 +1,5 @@
 import { Schema } from "@tiptap/pm/model";
+import { marks } from "./marks";
 import { nodes } from "./nodes";
 
 /**
@@ -8,7 +9,8 @@ import { nodes } from "./nodes";
  * there is exactly one definition of what a document may contain and the
  * mapping never has to reconcile two disagreeing models.
  */
-export const schema = new Schema({ nodes });
+export const schema = new Schema({ nodes, marks });
 
+export { marks } from "./marks";
 export { HEADING_LEVELS, nodes } from "./nodes";
 export type { HeadingLevel } from "./nodes";

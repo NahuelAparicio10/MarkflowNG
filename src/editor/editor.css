@@ -30,6 +30,55 @@
 	padding: 0 0.4em;
 }
 
+/* A task item's checkbox and content sit in separate wrappers, because the
+   content hole must be the only child of its element — see the listItem node
+   spec. Laid out side by side here, as the reader lays out its own. */
+.markflow-editor li.markflow-task-item {
+	display: flex;
+	align-items: baseline;
+}
+
+.markflow-editor .markflow-task-checkbox input {
+	cursor: pointer;
+}
+
+.markflow-editor .markflow-task-content {
+	flex: 1;
+	min-width: 0;
+}
+
+.markflow-editor .markflow-task-content > :first-child {
+	margin-top: 0;
+}
+
+.markflow-editor a {
+	cursor: text;
+}
+
+.markflow-link-editor {
+	position: fixed;
+	z-index: 10;
+	display: flex;
+	gap: 0.4rem;
+	align-items: center;
+	padding: 0.4rem;
+	border: 1px solid currentColor;
+	border-radius: 6px;
+	background: Canvas;
+	color: CanvasText;
+	font-size: 0.85rem;
+	box-shadow: 0 4px 16px rgb(0 0 0 / 0.15);
+}
+
+.markflow-link-editor input {
+	width: 18rem;
+	padding: 0.2rem 0.4rem;
+	border: 1px solid currentColor;
+	border-radius: 4px;
+	background: transparent;
+	color: inherit;
+}
+
 .markflow-save-recovery {
 	margin: 1rem 1.5rem 0;
 	padding: 0.75rem 1rem;

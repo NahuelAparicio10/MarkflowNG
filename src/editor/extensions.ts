@@ -1,7 +1,10 @@
-import { Node } from "@tiptap/core";
-import type { NodeSpec } from "@tiptap/pm/model";
+import { Mark, Node } from "@tiptap/core";
+import type { MarkSpec, NodeSpec } from "@tiptap/pm/model";
 import StarterKit from "@tiptap/starter-kit";
-import { nodes } from "../core/schema";
+import { marks, nodes } from "../core/schema";
+import { createEditingBehaviorExtension } from "./editingBehavior";
+import { createInputRulesExtension } from "./inputRules";
+import { createShortcutsExtension } from "./shortcuts";
 
 /**
  * D1: the editor's schema comes only from `src/core/schema/`. StarterKit is
@@ -51,15 +54,11 @@ function createNodeExtension(name: string, spec: NodeSpec) {
 		atom: spec.atom,
 		selectable: spec.selectable,
 		defining: spec.defining,
+		code: spec.code,
+		marks: spec.marks,
 
 		addAttributes() {
-			if (!spec.attrs) {
-				return {};
-			}
-
-			return Object.fromEntries(
-				Object.entries(spec.attrs).map(([key, attr]) => [key, { default: attr.default }]),
-			);
+			return adaptAttributes(spec.attrs);
 		},
 
 		parseHTML() {
@@ -72,13 +71,64 @@ function createNodeExtension(name: string, spec: NodeSpec) {
 	});
 }
 
+/** The mark counterpart of `createNodeExtension`, under the same rule. */
+function createMarkExtension(name: string, spec: MarkSpec) {
+	return Mark.create({
+		name,
+		inclusive: spec.inclusive,
+		excludes: spec.excludes,
+		code: spec.code as boolean | undefined,
+
+		addAttributes() {
+			return adaptAttributes(spec.attrs);
+		},
+
+		parseHTML() {
+			return spec.parseDOM ?? [];
+		},
+
+		renderHTML({ mark }) {
+			return spec.toDOM ? spec.toDOM(mark, true) : [name, 0];
+		},
+	});
+}
+
 /**
- * The editor's full extension list: the core node set, one adapter per node
- * type, plus history for undo/redo. No StarterKit node or mark is
- * registered — see design decision D1 of
+ * Attribute defaults only. Parsing and rendering stay with the spec's own
+ * `parseDOM`/`toDOM`; `rendered: false` stops Tiptap from also writing each
+ * attribute onto the element under its own name.
+ */
+function adaptAttributes(attrs: NodeSpec["attrs"] | MarkSpec["attrs"]) {
+	if (!attrs) {
+		return {};
+	}
+
+	return Object.fromEntries(
+		Object.entries(attrs).map(([key, attr]) => [key, { default: attr.default, rendered: false }]),
+	);
+}
+
+/**
+ * The editor's full extension list: the core node and mark sets, one adapter
+ * per type, history for undo/redo, and the behavior built on top of the
+ * schema — shortcuts, list keys, input rules, task checkboxes and link paste.
+ * No StarterKit node or mark is registered — see design decision D1 of
  * `openspec/changes/document-editor-base/design.md`.
  */
-export const extensions = [
-	history,
-	...Object.entries(nodes).map(([name, spec]) => createNodeExtension(name, spec as NodeSpec)),
-];
+export function createExtensions(options: EditorBehaviorOptions) {
+	return [
+		history,
+		...Object.entries(nodes).map(([name, spec]) => createNodeExtension(name, spec as NodeSpec)),
+		...Object.entries(marks).map(([name, spec]) => createMarkExtension(name, spec)),
+		createInputRulesExtension(options.isInputRulesEnabled),
+		createShortcutsExtension(options.onOpenLink),
+		createEditingBehaviorExtension(),
+	];
+}
+
+export interface EditorBehaviorOptions {
+	/** Read on every keystroke, so toggling the setting applies immediately. */
+	isInputRulesEnabled(): boolean;
+	/** Invoked by the link shortcut. The affordance itself lives in `src/ui/`. */
+	onOpenLink(): void;
+}

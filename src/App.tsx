@@ -5,6 +5,7 @@ import ReaderView from "./reader/ReaderView";
 import RawView from "./reader/RawView";
 import { openFileDialog } from "./store/openFile";
 import { useSessionStore } from "./store/session";
+import { useSettingsStore } from "./store/settings";
 import { useModeShortcut } from "./ui/useModeShortcut";
 import { syncWindowTitle } from "./ui/windowTitle";
 
@@ -39,6 +40,7 @@ export default function App() {
 							Outline
 						</button>
 					) : null}
+					{mode === "editor" && filePath ? <InputRulesToggle /> : null}
 				</div>
 				<span className="truncate text-sm opacity-70">
 					{dirty ? "● " : ""}
@@ -73,6 +75,19 @@ export default function App() {
 				</div>
 			</main>
 		</div>
+	);
+}
+
+/** The single opt-out for automatic Markdown conversion — design decision D3. */
+function InputRulesToggle() {
+	const enabled = useSettingsStore((state) => state.inputRulesEnabled);
+	const setEnabled = useSettingsStore((state) => state.setInputRulesEnabled);
+
+	return (
+		<label className="flex items-center gap-1 text-sm">
+			<input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.target.checked)} />
+			Convert Markdown as I type
+		</label>
 	);
 }
 

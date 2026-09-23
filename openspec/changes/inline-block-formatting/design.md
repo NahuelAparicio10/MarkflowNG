@@ -165,5 +165,6 @@ unaffected until the user edits and saves.
 
 - ~~Should `Ctrl+K` open the link affordance?~~ Resolved: yes, `Mod-k`. Nothing
   else in the app binds it, and in Chromium/WebView2 a page may override it.
-- Should an empty list item on Enter exit the list, as most editors do? Almost
-  certainly yes; confirm the exact behavior for nested lists during implementation.
+- ~~Should an empty list item on Enter exit the list?~~ Resolved: yes, one level
+  at a time. An empty top-level item becomes a paragraph after the list; an empty
+  nested item moves out to its parent list.

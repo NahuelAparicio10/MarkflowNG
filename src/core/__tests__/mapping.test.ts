@@ -28,8 +28,42 @@ describe("mapping registry", () => {
 		}
 	});
 
-	it("covers the node types this change makes editable", () => {
-		expect([...registry.byMdastType.keys()].sort()).toEqual(["heading", "paragraph", "text"]);
+	it("covers every editable node and mark type", () => {
+		expect([...registry.byMdastType.keys()].sort()).toEqual([
+			"blockquote",
+			"code",
+			"delete",
+			"emphasis",
+			"heading",
+			"inlineCode",
+			"link",
+			"list",
+			"listItem",
+			"paragraph",
+			"strong",
+			"text",
+			"thematicBreak",
+		]);
+	});
+
+	it("registers a handler pair for every mark in the schema", () => {
+		for (const markName of Object.keys(schema.marks)) {
+			expect(registry.byPmType.has(markName), `missing mark handler: ${markName}`).toBe(true);
+		}
+	});
+
+	it("registers a handler pair for every node in the schema except the structural ones", () => {
+		// `doc` is the root the walkers handle themselves, and the preservation
+		// nodes are converted by the walkers verbatim, never through a handler.
+		const walkerOwned = new Set(["doc", "preserved", "preservedInline"]);
+
+		for (const nodeName of Object.keys(schema.nodes)) {
+			if (walkerOwned.has(nodeName)) {
+				continue;
+			}
+
+			expect(registry.byPmType.has(nodeName), `missing node handler: ${nodeName}`).toBe(true);
+		}
 	});
 });
 
@@ -133,7 +167,7 @@ describe("preservation of unsupported content", () => {
 	});
 
 	it("uses an inline preservation node for phrasing content", () => {
-		const doc = mdastToPm(parseMarkdown("Text with *emphasis*.\n"));
+		const doc = mdastToPm(parseMarkdown("Text with ![alt](image.png).\n"));
 		const paragraph = firstChild(doc);
 		const types = new Set<string>();
 

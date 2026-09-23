@@ -72,7 +72,7 @@ describe("byte-identical round trip on disk", () => {
 });
 
 describe("content beyond the editable schema survives a save", () => {
-	it("keeps frontmatter, a table and a code block intact when an unrelated paragraph is edited", async () => {
+	it("keeps frontmatter, a table, an image and a code block intact when an unrelated paragraph is edited", async () => {
 		const { loadDocument } = await import("../loadDocument");
 		const { saveDocument } = await import("../saveDocument");
 
@@ -84,6 +84,8 @@ describe("content beyond the editable schema survives a save", () => {
 			"# Heading",
 			"",
 			"Body paragraph.",
+			"",
+			"![Diagram](diagram.png)",
 			"",
 			"| A | B |",
 			"| --- | --- |",
@@ -113,6 +115,7 @@ describe("content beyond the editable schema survives a save", () => {
 		const after = readFileSync(filePath, "utf8");
 		expect(after).toContain("title: Test document");
 		expect(after).toContain("| A | B |");
+		expect(after).toContain("![Diagram](diagram.png)");
 		expect(after).toContain('console.log("hi");');
 		expect(after).toContain("Body paragraph, edited.");
 	});

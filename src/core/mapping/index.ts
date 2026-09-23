@@ -1,19 +1,52 @@
 import { schema } from "../schema";
-import { headingHandler } from "./handlers/heading";
-import { paragraphHandler } from "./handlers/paragraph";
+import { blockquoteHandler } from "./handlers/blockquote";
+import { codeBlockHandler } from "./handlers/codeBlock";
+import { emphasisHandler } from "./handlers/emphasis";
+import { createHeadingHandler } from "./handlers/heading";
+import { inlineCodeHandler } from "./handlers/inlineCode";
+import { linkHandler } from "./handlers/link";
+import { listHandler } from "./handlers/list";
+import { listItemHandler } from "./handlers/listItem";
+import { createParagraphHandler } from "./handlers/paragraph";
+import type { HandlerLookup } from "./handlers/phrasing";
+import { strikethroughHandler } from "./handlers/strikethrough";
+import { strongHandler } from "./handlers/strong";
 import { textHandler } from "./handlers/text";
+import { thematicBreakHandler } from "./handlers/thematicBreak";
 import { createMdastToPm } from "./mdastToPm";
 import { createPmToMdast } from "./pmToMdast";
 import { createRegistry } from "./registry";
 import type { NodeHandlerPair } from "./types";
 
 /**
+ * Textblocks rebuild mark nesting from the mark handlers registered below. The
+ * lookup is resolved at call time, so it can close over the registry it is
+ * itself part of.
+ */
+const lookup: HandlerLookup = (pmType) => registry.byPmType.get(pmType);
+
+/**
  * The composition point for the mapping.
  *
- * Adding support for a node type means writing a handler pair in its own module
- * and adding it to this list. Nothing else under `src/core/mapping/` changes.
+ * Adding support for a node or mark type means writing a handler pair in its
+ * own module and adding it to this list. Nothing else under
+ * `src/core/mapping/` changes.
  */
-const handlerPairs: NodeHandlerPair[] = [textHandler, paragraphHandler, headingHandler];
+const handlerPairs: NodeHandlerPair[] = [
+	textHandler,
+	createParagraphHandler(lookup),
+	createHeadingHandler(lookup),
+	strongHandler,
+	emphasisHandler,
+	strikethroughHandler,
+	inlineCodeHandler,
+	linkHandler,
+	listHandler,
+	listItemHandler,
+	blockquoteHandler,
+	codeBlockHandler,
+	thematicBreakHandler,
+];
 
 export const registry = createRegistry(handlerPairs);
 

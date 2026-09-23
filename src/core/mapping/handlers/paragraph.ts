@@ -1,20 +1,27 @@
-import type { Paragraph, PhrasingContent } from "mdast";
+import type { Paragraph } from "mdast";
 import { defineNodeHandler } from "../registry";
+import { type HandlerLookup, phrasingToMdast } from "./phrasing";
 
-export const paragraphHandler = defineNodeHandler<Paragraph>({
-	mdastType: "paragraph",
-	pmType: "paragraph",
+/**
+ * A factory rather than a constant because converting inline content back to
+ * mdast needs the mark handlers, which the composition entry point supplies.
+ */
+export function createParagraphHandler(lookup: HandlerLookup) {
+	return defineNodeHandler<Paragraph>({
+		mdastType: "paragraph",
+		pmType: "paragraph",
 
-	toPm(node, { schema, convertChildren }) {
-		return [schema.node("paragraph", null, convertChildren(node, true))];
-	},
+		toPm(node, { schema, convertChildren }) {
+			return [schema.node("paragraph", null, convertChildren(node, true))];
+		},
 
-	toMdast(node, { convertChildren }) {
-		return [
-			{
-				type: "paragraph",
-				children: convertChildren(node) as PhrasingContent[],
-			},
-		];
-	},
-});
+		toMdast(node, context) {
+			return [
+				{
+					type: "paragraph",
+					children: phrasingToMdast(node, context, lookup),
+				},
+			];
+		},
+	});
+}

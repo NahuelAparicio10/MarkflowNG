@@ -1,9 +1,12 @@
 import { useEffect } from "react";
+import { matchesShortcut } from "../editor/shortcuts";
 import { useSessionStore } from "../store/session";
 
 /**
  * Ctrl/Cmd+E cycles the view mode without reloading the document. Only
- * reader ⇄ raw are reachable — see `SessionState.cycleMode`.
+ * reader ⇄ raw are reachable — see `SessionState.cycleMode`. The binding is
+ * declared in the shortcut table, which matches modifiers exactly so that the
+ * inline code shortcut, Ctrl/Cmd+Shift+E, does not also switch modes.
  */
 export function useModeShortcut(): void {
 	const cycleMode = useSessionStore((state) => state.cycleMode);
@@ -11,8 +14,7 @@ export function useModeShortcut(): void {
 
 	useEffect(() => {
 		function handleKeyDown(event: KeyboardEvent) {
-			const isModifierPressed = event.metaKey || event.ctrlKey;
-			if (!isModifierPressed || event.key.toLowerCase() !== "e" || !hasDocument) {
+			if (!matchesShortcut(event, "cycleMode") || !hasDocument) {
 				return;
 			}
 

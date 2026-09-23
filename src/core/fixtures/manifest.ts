@@ -58,6 +58,71 @@ export const FIXTURES: readonly Fixture[] = [
 		covers: "valid Markdown written in a different form than the serializer emits",
 	},
 	{
+		path: "marks/strong.md",
+		normalized: true,
+		covers: "strong text mid-paragraph and at the end of a paragraph",
+	},
+	{
+		path: "marks/emphasis.md",
+		normalized: true,
+		covers: "emphasis mid-paragraph and spanning a whole paragraph",
+	},
+	{
+		path: "marks/strikethrough.md",
+		normalized: true,
+		covers: "GFM strikethrough, which mdast calls delete",
+	},
+	{
+		path: "marks/inline-code.md",
+		normalized: true,
+		covers: "inline code, including a backtick inside the code",
+	},
+	{
+		path: "marks/links.md",
+		normalized: true,
+		covers: "links with and without a title, and an autolink",
+	},
+	{
+		path: "marks/overlapping.md",
+		normalized: true,
+		covers: "overlapping and nested marks, including code and links inside other marks",
+	},
+	{
+		path: "blocks/nested-lists.md",
+		normalized: true,
+		covers: "bulleted lists nested three levels deep",
+	},
+	{
+		path: "blocks/mixed-lists.md",
+		normalized: true,
+		covers: "ordered and bulleted lists nested in each other, and an ordered list not starting at 1",
+	},
+	{
+		path: "blocks/loose-and-tight-lists.md",
+		normalized: true,
+		covers: "tight and loose lists, which differ only in blank lines between items",
+	},
+	{
+		path: "blocks/task-lists.md",
+		normalized: true,
+		covers: "checked, unchecked and plain items in one list, and task items in a nested list",
+	},
+	{
+		path: "blocks/blockquotes.md",
+		normalized: true,
+		covers: "a quote containing a heading, several paragraphs and a nested quote",
+	},
+	{
+		path: "blocks/code-blocks.md",
+		normalized: true,
+		covers: "code blocks with and without a language, with a meta string, with Markdown inside, and empty",
+	},
+	{
+		path: "blocks/thematic-breaks.md",
+		normalized: true,
+		covers: "thematic breaks between paragraphs and at the end of a document",
+	},
+	{
 		path: "real/readme.md",
 		normalized: false,
 		covers: "a real document from this repository",
