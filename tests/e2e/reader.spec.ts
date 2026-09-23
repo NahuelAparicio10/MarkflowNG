@@ -40,6 +40,11 @@ test("opens a document, shows it formatted, toggles raw view, and navigates via 
 	await expect(page.locator(".markflow-raw-content")).toBeVisible();
 	await expect(page.locator(".markflow-reader")).toHaveCount(0);
 
+	// raw -> editor -> reader: the cycle now has three stops, see task 2.2.
+	await page.keyboard.press("Control+E");
+	await expect(page.locator(".markflow-editor.ProseMirror")).toBeVisible();
+	await expect(page.locator(".markflow-reader")).toHaveCount(0);
+
 	await page.keyboard.press("Control+E");
 	await expect(page.locator(".markflow-reader")).toBeVisible();
 });
