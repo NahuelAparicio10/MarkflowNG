@@ -1,4 +1,5 @@
 import {
+	exists as tauriExists,
 	readTextFile as tauriReadTextFile,
 	remove as tauriRemove,
 	rename as tauriRename,
@@ -42,6 +43,14 @@ export async function readTextFile(path: string): Promise<string> {
 	}
 
 	return tauriReadTextFile(path);
+}
+
+export async function exists(path: string): Promise<boolean> {
+	if (devFiles) {
+		return devFiles.has(path);
+	}
+
+	return tauriExists(path);
 }
 
 export async function writeTextFile(path: string, data: string): Promise<void> {

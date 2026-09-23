@@ -1,18 +1,29 @@
 import { EditorContent, useEditor } from "@tiptap/react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useSessionStore } from "../store/session";
+import { selectDocument, useSessionStore } from "../store/session";
 import { useSettingsStore } from "../store/settings";
 import LinkEditor from "../ui/LinkEditor";
 import { createDebouncedAutosave } from "./autosave";
 import { AUTOSAVE_DEBOUNCE_MS } from "./constants";
 import { serializeDoc } from "./documentText";
+import { registerEditor, unregisterEditor, type EditorHandle } from "./editorRegistry";
 import { createExtensions } from "./extensions";
 import { loadDocument } from "./loadDocument";
 import { saveDocument } from "./saveDocument";
+import { shouldWrite } from "./savePolicy";
 import { useSaveShortcut } from "./useSaveShortcut";
 
 interface EditorViewProps {
 	filePath: string;
+	/** Whether this is the active tab: only it answers the save shortcut. */
+	isActive: boolean;
+	/** Whether the editor is on screen, i.e. active and in editor mode. */
+	isVisible: boolean;
+	/**
+	 * The document's reload counter from the session store. A change means
+	 * the file was reloaded from disk and the editor must rehydrate.
+	 */
+	revision: number;
 }
 
 /**
@@ -23,10 +34,12 @@ interface EditorViewProps {
  * document lives in ProseMirror, not in the session store (design
  * decision D4).
  *
- * Keyed by `filePath` in `App.tsx`, so a different file gets a fresh editor
- * and reloads rather than reusing stale content.
+ * Keyed by `filePath` in `App.tsx`, and one is mounted per open document, so
+ * each tab keeps its own ProseMirror instance — and with it its own undo
+ * history and caret — across tab switches (design decision D7 of the
+ * workspace-explorer change).
  */
-export default function EditorView({ filePath }: EditorViewProps) {
+export default function EditorView({ filePath, isActive, isVisible, revision }: EditorViewProps) {
 	const setDirty = useSessionStore((state) => state.setDirty);
 	const setError = useSessionStore((state) => state.setError);
 	const [saveFailure, setSaveFailure] = useState<string | null>(null);
@@ -57,24 +70,23 @@ export default function EditorView({ filePath }: EditorViewProps) {
 		},
 	});
 
-	const performSave = useCallback(async () => {
+	const performSave = useCallback(async (options?: { force?: boolean }) => {
 		if (!editor) {
 			return;
 		}
 
 		const currentText = serializeDoc(editor.state.doc);
-		// Guard: never write a document that already matches disk — see the
-		// "Autosave skips clean documents" scenario. Recomputed here rather
-		// than trusted from the caller, so this holds regardless of why save
-		// was invoked.
-		if (currentText === baselineRef.current) {
+		// Recomputed here rather than trusted from the caller, so the guards
+		// hold regardless of why save was invoked — see savePolicy.ts.
+		const conflict = selectDocument(useSessionStore.getState(), filePath)?.conflict ?? null;
+		if (!shouldWrite({ conflict, currentText, baselineText: baselineRef.current, force: options?.force })) {
 			return;
 		}
 
 		try {
 			const written = await saveDocument(filePath, editor.state.doc);
 			baselineRef.current = written;
-			setDirty(false);
+			setDirty(filePath, false);
 			setSaveFailure(null);
 			setRecoveryText(null);
 		} catch (error) {
@@ -100,7 +112,8 @@ export default function EditorView({ filePath }: EditorViewProps) {
 
 	// Load: reads the file, parses and maps it through the core, and
 	// hydrates the editor — the only load path, see loadDocument.ts. Runs
-	// once per mounted instance (component is keyed by filePath in App.tsx).
+	// once per mounted instance (component is keyed by filePath in App.tsx),
+	// and again whenever the document is reloaded from disk (`revision`).
 	useEffect(() => {
 		if (!editor) {
 			return;
@@ -122,7 +135,7 @@ export default function EditorView({ filePath }: EditorViewProps) {
 				// reconstructs against its own schema.
 				editor.commands.setContent(doc.toJSON(), { emitUpdate: false });
 				baselineRef.current = serializeDoc(doc);
-				setDirty(false);
+				setDirty(filePath, false);
 			},
 			(error: unknown) => {
 				if (cancelled) {
@@ -137,7 +150,7 @@ export default function EditorView({ filePath }: EditorViewProps) {
 			cancelled = true;
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [editor, filePath]);
+	}, [editor, filePath, revision]);
 
 	// Dirty detection is derived from content on every transaction (D7), and
 	// drives the debounced autosave. It never writes document content back
@@ -153,7 +166,7 @@ export default function EditorView({ filePath }: EditorViewProps) {
 			}
 			const currentText = serializeDoc(editor.state.doc);
 			const nowDirty = currentText !== baselineRef.current;
-			setDirty(nowDirty);
+			setDirty(filePath, nowDirty);
 
 			if (nowDirty) {
 				autosaveRef.current?.schedule();
@@ -166,14 +179,34 @@ export default function EditorView({ filePath }: EditorViewProps) {
 		return () => {
 			editor.off("update", handleUpdate);
 		};
-	}, [editor, setDirty]);
+	}, [editor, filePath, setDirty]);
+
+	useEffect(() => {
+		const handle: EditorHandle = {
+			saveNow(options) {
+				autosaveRef.current?.cancel();
+				return performSave(options);
+			},
+		};
+		registerEditor(filePath, handle);
+		return () => unregisterEditor(filePath, handle);
+	}, [filePath, performSave]);
 
 	const handleExplicitSave = useCallback(() => {
 		autosaveRef.current?.cancel();
 		void performSave();
 	}, [performSave]);
 
-	useSaveShortcut(handleExplicitSave, editor !== null);
+	useSaveShortcut(handleExplicitSave, editor !== null && isActive);
+
+	// A hidden editor loses DOM focus; restore it on return so typing lands
+	// at the caret the document was left with. `focus()` with no position
+	// keeps the current selection rather than moving it.
+	useEffect(() => {
+		if (editor && isVisible) {
+			editor.commands.focus();
+		}
+	}, [editor, isVisible]);
 
 	return (
 		<div className="markflow-editor-shell">

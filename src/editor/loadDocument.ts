@@ -1,6 +1,7 @@
 import type { Node as PmNode } from "@tiptap/pm/model";
 import { mdastToPm } from "../core/mapping";
 import { parseMarkdown } from "../core/markdown";
+import { recordLoadedContent } from "../explorer/selfWrites";
 import { readTextFile } from "./fs";
 
 /**
@@ -15,6 +16,7 @@ import { readTextFile } from "./fs";
  */
 export async function loadDocument(path: string): Promise<PmNode> {
 	const source = await readTextFile(path);
+	recordLoadedContent(path, source);
 	const tree = parseMarkdown(source);
 
 	return mdastToPm(tree);

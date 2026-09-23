@@ -2,6 +2,7 @@
 @import "./ui/typography.css";
 @import "./reader/reader.css";
 @import "./editor/editor.css";
+@import "./explorer/explorer.css";
 
 :root {
 	color-scheme: light dark;

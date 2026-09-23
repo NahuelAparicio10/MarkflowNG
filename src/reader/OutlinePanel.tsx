@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react";
-import { useSessionStore } from "../store/session";
+import { selectActiveDocument, useSessionStore } from "../store/session";
+import { EMPTY_OUTLINE } from "./outline";
 
 /**
- * Navigable outline for the open document. Empty and error-free when the
+ * Navigable outline for the active document. Empty and error-free when the
  * document has no headings. Active-entry tracking uses `IntersectionObserver`
  * rather than a scroll listener, so it costs nothing between visibility
  * changes instead of running on every scroll frame — see design decision D6.
  */
 export default function OutlinePanel() {
-	const entries = useSessionStore((state) => state.outline.entries);
+	const entries = useSessionStore((state) => (selectActiveDocument(state)?.outline ?? EMPTY_OUTLINE).entries);
 	const [activeId, setActiveId] = useState<string | null>(null);
 
 	useEffect(() => {

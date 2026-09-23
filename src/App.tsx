@@ -1,28 +1,61 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import EditorView from "./editor/EditorView";
+import FileTree from "./explorer/FileTree";
+import { openFolderDialog } from "./explorer/openWorkspace";
+import { baseName, joinWorkspacePath } from "./explorer/paths";
+import Preview from "./explorer/Preview";
+import QuickOpen from "./explorer/QuickOpen";
+import { useQuickOpenShortcut } from "./explorer/useQuickOpenShortcut";
 import OutlinePanel from "./reader/OutlinePanel";
 import ReaderView from "./reader/ReaderView";
 import RawView from "./reader/RawView";
-import { openFileDialog } from "./store/openFile";
-import { useSessionStore } from "./store/session";
+import { openFileAtPath, openFileDialog } from "./store/openFile";
+import { selectActiveDocument, useSessionStore } from "./store/session";
 import { useSettingsStore } from "./store/settings";
+import { useWorkspaceStore } from "./store/workspace";
+import ExternalChangeBanner from "./ui/ExternalChangeBanner";
+import TabStrip from "./ui/TabStrip";
 import { useModeShortcut } from "./ui/useModeShortcut";
 import { syncWindowTitle } from "./ui/windowTitle";
 
 export default function App() {
-	const filePath = useSessionStore((state) => state.filePath);
-	const fileName = useSessionStore((state) => state.fileName);
-	const tree = useSessionStore((state) => state.tree);
-	const mode = useSessionStore((state) => state.mode);
+	const documents = useSessionStore((state) => state.documents);
+	const active = useSessionStore(selectActiveDocument);
 	const error = useSessionStore((state) => state.error);
-	const dirty = useSessionStore((state) => state.dirty);
+	const workspaceRoot = useWorkspaceStore((state) => state.root);
+	const scanning = useWorkspaceStore((state) => state.scanning);
+	const previewPath = useWorkspaceStore((state) => state.previewPath);
 	const [outlineOpen, setOutlineOpen] = useState(false);
+	const [quickOpenShown, setQuickOpenShown] = useState(false);
+
+	const fileName = active ? active.name : null;
+	const tree = active ? active.tree : null;
+	const mode = active ? active.mode : "reader";
+	const dirty = active ? active.dirty : false;
+	const isPreviewing = previewPath !== null && workspaceRoot !== null;
 
 	useModeShortcut();
+	useQuickOpenShortcut(
+		useCallback(() => setQuickOpenShown(true), []),
+		workspaceRoot !== null,
+	);
 
 	useEffect(() => {
 		syncWindowTitle(fileName, dirty);
 	}, [fileName, dirty]);
+
+	const openWorkspaceFile = useCallback(
+		(relativePath: string) => {
+			if (workspaceRoot === null) {
+				return;
+			}
+			const workspace = useWorkspaceStore.getState();
+			workspace.setPreview(null);
+			workspace.select(relativePath);
+			void openFileAtPath(joinWorkspacePath(workspaceRoot, relativePath));
+		},
+		[workspaceRoot],
+	);
 
 	return (
 		<div className="flex h-full flex-col">
@@ -30,6 +63,9 @@ export default function App() {
 				<div className="flex items-center gap-2">
 					<button type="button" onClick={() => void openFileDialog()}>
 						Open…
+					</button>
+					<button type="button" onClick={() => void openFolderDialog()}>
+						Open folder…
 					</button>
 					{tree ? (
 						<button
@@ -40,7 +76,7 @@ export default function App() {
 							Outline
 						</button>
 					) : null}
-					{mode === "editor" && filePath ? <InputRulesToggle /> : null}
+					{mode === "editor" && active ? <InputRulesToggle /> : null}
 				</div>
 				<span className="truncate text-sm opacity-70">
 					{dirty ? "● " : ""}
@@ -48,32 +84,68 @@ export default function App() {
 				</span>
 			</header>
 
+			<TabStrip />
+
 			{error ? <p className="border-b border-black/10 px-4 py-2 text-sm text-red-600 dark:border-white/10">{error}</p> : null}
 
+			{active && !isPreviewing ? <ExternalChangeBanner document={active} /> : null}
+
 			<main className="flex flex-1 overflow-hidden">
-				{outlineOpen && tree ? (
+				{workspaceRoot !== null ? (
+					<aside className="markflow-explorer">
+						<div className="markflow-explorer-title" title={workspaceRoot}>
+							{baseName(workspaceRoot.replace(/\\/g, "/").replace(/\/$/, "")) || workspaceRoot}
+							{scanning ? <span className="markflow-explorer-scanning"> · scanning…</span> : null}
+						</div>
+						<FileTree onOpen={openWorkspaceFile} />
+					</aside>
+				) : null}
+
+				{outlineOpen && tree && !isPreviewing ? (
 					<aside className="w-64 shrink-0 overflow-auto border-r border-black/10 p-4 dark:border-white/10">
 						<OutlinePanel />
 					</aside>
 				) : null}
 
 				<div className="flex-1 overflow-auto">
-					{!tree ? <EmptyState /> : null}
-
-					{/* The editor stays mounted for as long as the file is open, even
-					    while another mode is shown, so switching away and back never
-					    discards an in-progress edit — see EditorView.tsx. */}
-					{filePath ? (
-						<div className={mode === "editor" ? "h-full" : "hidden"}>
-							<EditorView key={filePath} filePath={filePath} />
-						</div>
+					{isPreviewing ? (
+						<Preview
+							path={joinWorkspacePath(workspaceRoot, previewPath)}
+							onOpen={() => openWorkspaceFile(previewPath)}
+						/>
 					) : null}
 
-					{tree && mode !== "editor" ? (
+					{!tree && !isPreviewing ? <EmptyState hasWorkspace={workspaceRoot !== null} /> : null}
+
+					{/* One editor per open document, each mounted for as long as its
+					    tab is open, even while another tab, mode or a preview is
+					    shown, so switching away and back never discards an
+					    in-progress edit, its undo history or its caret — see
+					    EditorView.tsx. */}
+					{documents.map((document) => {
+						const isActive = document.path === active?.path;
+						const isVisible = isActive && document.mode === "editor" && !isPreviewing;
+						return (
+							<div key={document.path} className={isVisible ? "h-full" : "hidden"}>
+								<EditorView
+									filePath={document.path}
+									isActive={isActive}
+									isVisible={isVisible}
+									revision={document.revision}
+								/>
+							</div>
+						);
+					})}
+
+					{tree && mode !== "editor" && !isPreviewing ? (
 						mode === "raw" ? <RawView tree={tree} /> : <ReaderView />
 					) : null}
 				</div>
 			</main>
+
+			{quickOpenShown ? (
+				<QuickOpen onOpen={openWorkspaceFile} onClose={() => setQuickOpenShown(false)} />
+			) : null}
 		</div>
 	);
 }
@@ -91,15 +163,24 @@ function InputRulesToggle() {
 	);
 }
 
-function EmptyState() {
+function EmptyState({ hasWorkspace }: { hasWorkspace: boolean }) {
 	return (
 		<div className="flex h-full items-center justify-center">
 			<div className="text-center">
 				<h1 className="text-2xl font-semibold">Markflow</h1>
 				<p className="mt-2 text-sm opacity-70">Write documents visually, get clean Markdown files.</p>
-				<button type="button" className="mt-4" onClick={() => void openFileDialog()}>
-					Open a Markdown file…
-				</button>
+				{hasWorkspace ? (
+					<p className="mt-4 text-sm opacity-70">Pick a file in the tree, or press Ctrl+P to find one.</p>
+				) : (
+					<div className="mt-4 flex justify-center gap-2">
+						<button type="button" onClick={() => void openFileDialog()}>
+							Open a Markdown file…
+						</button>
+						<button type="button" onClick={() => void openFolderDialog()}>
+							Open a folder…
+						</button>
+					</div>
+				)}
 			</div>
 		</div>
 	);

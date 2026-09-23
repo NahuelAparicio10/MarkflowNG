@@ -1,16 +1,16 @@
 import { useMemo } from "react";
-import { useSessionStore } from "../store/session";
+import { selectActiveDocument, useSessionStore } from "../store/session";
 import { renderMdast } from "./renderMdast";
 
 /**
- * Formatted, read-only rendering of the currently open document. No caret, no
+ * Formatted, read-only rendering of the active document. No caret, no
  * editing toolbar, no ProseMirror instance — see design decision D1.
  */
 export default function ReaderView() {
-	const tree = useSessionStore((state) => state.tree);
-	const outline = useSessionStore((state) => state.outline);
+	const tree = useSessionStore((state) => selectActiveDocument(state)?.tree ?? null);
+	const outline = useSessionStore((state) => selectActiveDocument(state)?.outline ?? null);
 
-	const content = useMemo(() => (tree ? renderMdast(tree, outline) : null), [tree, outline]);
+	const content = useMemo(() => (tree && outline ? renderMdast(tree, outline) : null), [tree, outline]);
 
 	if (!tree) {
 		return null;

@@ -22,6 +22,9 @@ import { enterInList, indentListItem, outdentListItem, toggleMarkCommand } from 
  *   for them to reach.
  * - No binding uses `Alt` alone, which Windows reserves for menu access, or
  *   `Mod-Shift-i`/`Mod-Shift-c`/`F12`, which open developer tools in dev builds.
+ * - Quick open takes `Mod-p`, as `Context/EXPLORE.md` specifies and as most
+ *   editors do. It shadows print in Edge/Chrome, which a page may override, and
+ *   WebView2 has no print UI of its own to lose.
  */
 export const SHORTCUTS = {
 	strong: "Mod-b",
@@ -36,6 +39,8 @@ export const SHORTCUTS = {
 	save: "Mod-s",
 	/** App level, handled in `useModeShortcut`. */
 	cycleMode: "Mod-e",
+	/** App level, handled in `useQuickOpenShortcut`. */
+	quickOpen: "Mod-p",
 } as const;
 
 export type ShortcutName = keyof typeof SHORTCUTS;
