@@ -1,6 +1,7 @@
+import { open } from "@tauri-apps/plugin-dialog";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import type { EditorView } from "@tiptap/pm/view";
-import { hasImageExtension, writeImageAsset } from "../images/assets";
+import { hasImageExtension, IMAGE_EXTENSIONS, writeImageAsset } from "../images/assets";
 import { referenceFor } from "../images/paths";
 import { type ImageAttrs, insertImages } from "./images";
 
@@ -73,10 +74,22 @@ async function insertImageData(view: EditorView, files: File[], pos: number | un
 }
 
 /**
+ * References to image files that already exist on disk. Each is stored
+ * relative to the document when it lies inside the workspace, and as given
+ * otherwise (design decision D5).
+ */
+function imagesForFiles(paths: string[], context: ImageInsertionContext): ImageAttrs[] {
+	const documentPath = context.getDocumentPath();
+
+	return paths.filter(hasImageExtension).map((path) => ({
+		src: documentPath === null ? path : referenceFor(documentPath, path, context.getWorkspaceRoot()),
+		alt: altFromName(path),
+	}));
+}
+
+/**
  * Inserts references to image files that already exist on disk — dropped from
- * the file manager, or chosen in the file dialog. Each is stored relative to
- * the document when it lies inside the workspace, and as given otherwise
- * (design decision D5).
+ * the file manager, or chosen in the file dialog.
  */
 export function insertImageFiles(
 	view: EditorView,
@@ -84,13 +97,22 @@ export function insertImageFiles(
 	pos: number | undefined,
 	context: ImageInsertionContext,
 ): boolean {
-	const documentPath = context.getDocumentPath();
-	const images = paths.filter(hasImageExtension).map((path) => ({
-		src: documentPath === null ? path : referenceFor(documentPath, path, context.getWorkspaceRoot()),
-		alt: altFromName(path),
-	}));
+	return insertImages(imagesForFiles(paths, context), pos)(view.state, view.dispatch);
+}
 
-	return insertImages(images, pos)(view.state, view.dispatch);
+/**
+ * Asks for an image file in the file dialog, for the slash menu's image entry.
+ * Resolves to no images when the dialog is cancelled or cannot open.
+ */
+export async function chooseImageFiles(context: ImageInsertionContext): Promise<ImageAttrs[]> {
+	try {
+		const selected = await open({ multiple: false, filters: [{ name: "Images", extensions: IMAGE_EXTENSIONS }] });
+
+		return typeof selected === "string" ? imagesForFiles([selected], context) : [];
+	} catch (error) {
+		context.notify(`Could not open the file dialog: ${error instanceof Error ? error.message : String(error)}`, "error");
+		return [];
+	}
 }
 
 /** Paste and HTML5 drop of image data. OS file drops arrive through Tauri instead. */

@@ -5,10 +5,11 @@ import type { NodeView } from "@tiptap/pm/view";
 import StarterKit from "@tiptap/starter-kit";
 import { marks, nodes } from "../core/schema";
 import { createEditingBehaviorExtension } from "./editingBehavior";
-import { createImageInsertionPlugin, type ImageInsertionContext } from "./imageInsertion";
+import { chooseImageFiles, createImageInsertionPlugin, type ImageInsertionContext } from "./imageInsertion";
 import { ImageView } from "./imageView";
 import { createInputRulesExtension } from "./inputRules";
 import { createShortcutsExtension } from "./shortcuts";
+import { createSlashMenuExtension } from "./slashMenu";
 import { createTableAlignmentPlugin, createTableNormalizePlugin } from "./tables";
 
 /**
@@ -168,8 +169,8 @@ function adaptAttributes(attrs: NodeSpec["attrs"] | MarkSpec["attrs"]) {
 /**
  * The editor's full extension list: the core node and mark sets, one adapter
  * per type, history for undo/redo, and the behavior built on top of the
- * schema — shortcuts, list keys, input rules, task checkboxes, link paste,
- * table editing and image insertion.
+ * schema — shortcuts, list keys, input rules, the slash menu, task
+ * checkboxes, link paste, table editing and image insertion.
  * No StarterKit node or mark is registered — see design decision D1 of
  * `openspec/changes/document-editor-base/design.md`.
  */
@@ -184,6 +185,7 @@ export function createExtensions(options: EditorBehaviorOptions) {
 		...Object.entries(nodes).map(([name, spec]) => createNodeExtension(name, spec as NodeSpec, nodeViews[name])),
 		...Object.entries(marks).map(([name, spec]) => createMarkExtension(name, spec)),
 		createInputRulesExtension(options.isInputRulesEnabled),
+		createSlashMenuExtension({ chooseImages: () => chooseImageFiles(options.images) }),
 		createShortcutsExtension(options.onOpenLink),
 		createEditingBehaviorExtension(),
 		tables,

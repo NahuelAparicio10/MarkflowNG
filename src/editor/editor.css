@@ -211,3 +211,40 @@
 	background: transparent;
 	color: inherit;
 }
+
+/* The slash menu's popup, placed at the caret by src/ui/SlashMenu.tsx. */
+.markflow-slash-menu {
+	position: fixed;
+	z-index: 10;
+	min-width: 12rem;
+	max-height: 18rem;
+	overflow-y: auto;
+	padding: 0.25rem;
+	border: 1px solid currentColor;
+	border-radius: 6px;
+	background: Canvas;
+	color: CanvasText;
+	font-size: 0.85rem;
+	box-shadow: 0 4px 16px rgb(0 0 0 / 0.15);
+}
+
+.markflow-slash-menu-group {
+	padding: 0.35rem 0.5rem 0.15rem;
+	font-size: 0.75rem;
+	opacity: 0.6;
+}
+
+.markflow-slash-menu-item {
+	padding: 0.3rem 0.5rem;
+	border-radius: 4px;
+	cursor: pointer;
+}
+
+.markflow-slash-menu-item[aria-selected="true"] {
+	background: Highlight;
+	color: HighlightText;
+}
+
+.markflow-slash-menu[aria-busy="true"] .markflow-slash-menu-item {
+	cursor: progress;
+}

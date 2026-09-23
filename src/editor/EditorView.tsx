@@ -5,6 +5,7 @@ import { useSettingsStore } from "../store/settings";
 import { useWorkspaceStore } from "../store/workspace";
 import EditorToolbar from "../ui/EditorToolbar";
 import LinkEditor from "../ui/LinkEditor";
+import SlashMenu from "../ui/SlashMenu";
 import { createDebouncedAutosave } from "./autosave";
 import { AUTOSAVE_DEBOUNCE_MS } from "./constants";
 import { serializeDoc } from "./documentText";
@@ -234,6 +235,7 @@ export default function EditorView({ filePath, isActive, isVisible, revision }: 
 			) : null}
 			{editor ? <EditorToolbar editor={editor} images={imageContext} /> : null}
 			<EditorContent editor={editor} />
+			{editor ? <SlashMenu editor={editor} /> : null}
 			{linkEditorOpen && editor ? <LinkEditor editor={editor} onClose={() => setLinkEditorOpen(false)} /> : null}
 		</div>
 	);
