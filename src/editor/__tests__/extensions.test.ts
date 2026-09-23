@@ -3,7 +3,11 @@ import { describe, expect, it } from "vitest";
 import { schema as coreSchema } from "../../core/schema";
 import { createExtensions } from "../extensions";
 
-const extensions = createExtensions({ isInputRulesEnabled: () => true, onOpenLink: () => {} });
+const extensions = createExtensions({
+	isInputRulesEnabled: () => true,
+	onOpenLink: () => {},
+	images: { getDocumentPath: () => null, getWorkspaceRoot: () => null, notify: () => {} },
+});
 
 describe("editor extensions", () => {
 	it("build a schema with exactly the core node types, and no others", () => {

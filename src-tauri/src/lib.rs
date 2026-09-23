@@ -1,3 +1,4 @@
+mod document_scope;
 mod watcher;
 mod workspace;
 
@@ -59,6 +60,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             greet,
+            document_scope::allow_document_directory,
             workspace::scan_workspace,
             watcher::start_watching,
             watcher::stop_watching

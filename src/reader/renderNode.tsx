@@ -24,11 +24,17 @@ import type {
 	Yaml,
 } from "mdast";
 import type { ReactNode } from "react";
+import MarkdownImage from "./MarkdownImage";
 
 /** Everything a per-node renderer needs, without importing the dispatcher. */
 export interface RenderContext {
 	/** Stable DOM anchor id per heading node, keyed by node identity. */
 	headingIds: ReadonlyMap<Heading, string>;
+	/**
+	 * The file being rendered, which relative image references resolve
+	 * against; `null` when there is none, and local images show as missing.
+	 */
+	documentPath: string | null;
 }
 
 type AnyNode = Root | RootContent;
@@ -54,7 +60,10 @@ function renderChildren(parent: Parent, context: RenderContext): ReactNode[] {
 
 const UNSAFE_URL_PATTERN = /^\s*javascript:/i;
 
-/** Strips `javascript:` URLs so a Markdown link or image cannot run script. */
+/**
+ * Strips `javascript:` URLs so a Markdown link cannot run script. Images apply
+ * the same rule in `src/images/imageSource.ts`.
+ */
 function safeUrl(url: string): string | undefined {
 	return UNSAFE_URL_PATTERN.test(url) ? undefined : url;
 }
@@ -99,8 +108,8 @@ const renderers: Record<string, NodeRenderer<AnyNode>> = {
 		</a>
 	)),
 
-	image: defineRenderer<Image>((node, key) => (
-		<img key={key} src={safeUrl(node.url)} alt={node.alt ?? ""} title={node.title ?? undefined} />
+	image: defineRenderer<Image>((node, key, context) => (
+		<MarkdownImage key={key} node={node} documentPath={context.documentPath} />
 	)),
 
 	list: defineRenderer<List>((node, key, context) => {
@@ -157,6 +166,9 @@ const renderers: Record<string, NodeRenderer<AnyNode>> = {
 	table: defineRenderer<Table>((node, key, context) => {
 		const [headRow, ...bodyRows] = node.children;
 		const align = node.align ?? [];
+		// Rows are padded to the widest one, as the editor pads them on load,
+		// so a ragged table shows the same grid in both modes.
+		const width = node.children.reduce((widest, row) => Math.max(widest, row.children.length), 0);
 
 		const renderCell = (cell: TableCell, columnIndex: number, isHeader: boolean) => {
 			const Tag = isHeader ? "th" : "td";
@@ -168,9 +180,13 @@ const renderers: Record<string, NodeRenderer<AnyNode>> = {
 			);
 		};
 
-		const renderRow = (row: TableRow, rowKey: number, isHeader: boolean) => (
-			<tr key={rowKey}>{row.children.map((cell, columnIndex) => renderCell(cell, columnIndex, isHeader))}</tr>
-		);
+		const renderRow = (row: TableRow, rowKey: number, isHeader: boolean) => {
+			const cells = row.children.map((cell, columnIndex) => renderCell(cell, columnIndex, isHeader));
+			for (let columnIndex = row.children.length; columnIndex < width; columnIndex++) {
+				cells.push(renderCell({ type: "tableCell", children: [] }, columnIndex, isHeader));
+			}
+			return <tr key={rowKey}>{cells}</tr>;
+		};
 
 		return (
 			<table key={key}>

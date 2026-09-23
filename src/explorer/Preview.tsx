@@ -57,14 +57,17 @@ export default function Preview({ path, onOpen }: PreviewProps) {
 			{loaded && "error" in loaded ? (
 				<p className="markflow-preview-error">Could not preview this file: {loaded.error}</p>
 			) : null}
-			{loaded && "tree" in loaded ? <PreviewContent tree={loaded.tree} /> : null}
+			{loaded && "tree" in loaded ? <PreviewContent tree={loaded.tree} documentPath={loaded.path} /> : null}
 		</div>
 	);
 }
 
-/** The rendered document: exactly what reader mode shows for the same tree. */
-export function PreviewContent({ tree }: { tree: Root }) {
-	const content = useMemo(() => renderMdast(tree), [tree]);
+/**
+ * The rendered document: exactly what reader mode shows for the same tree.
+ * `documentPath` is where relative image references resolve from.
+ */
+export function PreviewContent({ tree, documentPath = null }: { tree: Root; documentPath?: string | null }) {
+	const content = useMemo(() => renderMdast(tree, undefined, documentPath), [tree, documentPath]);
 
 	return <div className="markflow-prose markflow-reader">{content}</div>;
 }

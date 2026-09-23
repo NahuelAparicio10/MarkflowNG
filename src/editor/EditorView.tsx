@@ -2,15 +2,19 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { selectDocument, useSessionStore } from "../store/session";
 import { useSettingsStore } from "../store/settings";
+import { useWorkspaceStore } from "../store/workspace";
+import EditorToolbar from "../ui/EditorToolbar";
 import LinkEditor from "../ui/LinkEditor";
 import { createDebouncedAutosave } from "./autosave";
 import { AUTOSAVE_DEBOUNCE_MS } from "./constants";
 import { serializeDoc } from "./documentText";
 import { registerEditor, unregisterEditor, type EditorHandle } from "./editorRegistry";
 import { createExtensions } from "./extensions";
+import type { ImageInsertionContext } from "./imageInsertion";
 import { loadDocument } from "./loadDocument";
 import { saveDocument } from "./saveDocument";
 import { shouldWrite } from "./savePolicy";
+import { useOsImageDrop } from "./useOsImageDrop";
 import { useSaveShortcut } from "./useSaveShortcut";
 
 interface EditorViewProps {
@@ -42,6 +46,7 @@ interface EditorViewProps {
 export default function EditorView({ filePath, isActive, isVisible, revision }: EditorViewProps) {
 	const setDirty = useSessionStore((state) => state.setDirty);
 	const setError = useSessionStore((state) => state.setError);
+	const setNotice = useSessionStore((state) => state.setNotice);
 	const [saveFailure, setSaveFailure] = useState<string | null>(null);
 	const [recoveryText, setRecoveryText] = useState<string | null>(null);
 
@@ -52,6 +57,15 @@ export default function EditorView({ filePath, isActive, isVisible, revision }: 
 
 	const [linkEditorOpen, setLinkEditorOpen] = useState(false);
 
+	// Images resolve against, and are written beside, this document. The
+	// workspace root is read at insertion time, since a workspace can be
+	// opened or closed while the document stays open.
+	const [imageContext] = useState<ImageInsertionContext>(() => ({
+		getDocumentPath: () => filePath,
+		getWorkspaceRoot: () => useWorkspaceStore.getState().root,
+		notify: (message, kind) => (kind === "error" ? setError(message) : setNotice(message)),
+	}));
+
 	// Built once per mounted editor. The input-rules setting is read through the
 	// store on every keystroke rather than captured here, so toggling it takes
 	// effect without rebuilding the editor.
@@ -59,6 +73,7 @@ export default function EditorView({ filePath, isActive, isVisible, revision }: 
 		createExtensions({
 			isInputRulesEnabled: () => useSettingsStore.getState().inputRulesEnabled,
 			onOpenLink: () => setLinkEditorOpen(true),
+			images: imageContext,
 		}),
 	);
 
@@ -198,6 +213,7 @@ export default function EditorView({ filePath, isActive, isVisible, revision }: 
 	}, [performSave]);
 
 	useSaveShortcut(handleExplicitSave, editor !== null && isActive);
+	useOsImageDrop(editor, isVisible, imageContext);
 
 	// A hidden editor loses DOM focus; restore it on return so typing lands
 	// at the caret the document was left with. `focus()` with no position
@@ -216,6 +232,7 @@ export default function EditorView({ filePath, isActive, isVisible, revision }: 
 					{recoveryText !== null ? <pre>{recoveryText}</pre> : null}
 				</div>
 			) : null}
+			{editor ? <EditorToolbar editor={editor} images={imageContext} /> : null}
 			<EditorContent editor={editor} />
 			{linkEditorOpen && editor ? <LinkEditor editor={editor} onClose={() => setLinkEditorOpen(false)} /> : null}
 		</div>

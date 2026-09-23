@@ -42,12 +42,40 @@ describe("renderMdast", () => {
 		expect(html).toContain("const x = 1;");
 	});
 
-	it("renders an image", () => {
+	it("renders an image by absolute URL directly", () => {
+		const html = renderSource("![alt text](https://example.com/image.png)\n");
+
+		expect(html).toContain("<img");
+		expect(html).toContain('src="https://example.com/image.png"');
+		expect(html).toContain('alt="alt text"');
+	});
+
+	it("never writes a relative reference into src, which would resolve against the app", () => {
 		const html = renderSource("![alt text](./image.png)\n");
 
 		expect(html).toContain("<img");
-		expect(html).toContain('src="./image.png"');
 		expect(html).toContain('alt="alt text"');
+		expect(html).not.toContain("./image.png");
+	});
+
+	it("shows an image at its encoded width, without the encoding in the tooltip", () => {
+		const html = renderSource('![a](https://example.com/a.png "Arena | width=320")\n');
+
+		expect(html).toContain('width="320"');
+		expect(html).toContain('title="Arena"');
+		expect(html).not.toContain("width=320");
+	});
+
+	it("does not load an image with a javascript: reference", () => {
+		const html = renderSource("![x](javascript:alert(1))\n");
+
+		expect(html).not.toContain("javascript:");
+	});
+
+	it("pads a ragged table row to the widest row, as the editor does", () => {
+		const html = renderSource("| a | b |\n| - | - |\n| 1 |\n");
+
+		expect(html).toContain("<td>1</td><td></td>");
 	});
 
 	it("renders a task list as checkboxes", () => {

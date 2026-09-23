@@ -3,6 +3,7 @@ import type { Heading, Root } from "mdast";
 import { describe, expect, it } from "vitest";
 import { parseMarkdown, serializeMarkdown } from "../markdown";
 import { mdastToPm, pmToMdast, registry } from "../mapping";
+import { TABLE_HEADER_MDAST_KEY } from "../mapping/handlers/table";
 import { createPmToMdast } from "../mapping/pmToMdast";
 import { schema } from "../schema";
 
@@ -35,15 +36,20 @@ describe("mapping registry", () => {
 			"delete",
 			"emphasis",
 			"heading",
+			"image",
 			"inlineCode",
 			"link",
 			"list",
 			"listItem",
 			"paragraph",
 			"strong",
+			"table",
+			"tableCell",
+			TABLE_HEADER_MDAST_KEY,
+			"tableRow",
 			"text",
 			"thematicBreak",
-		]);
+		].sort());
 	});
 
 	it("registers a handler pair for every mark in the schema", () => {
@@ -136,14 +142,28 @@ describe("pmToMdast", () => {
 });
 
 describe("preservation of unsupported content", () => {
-	it("preserves a GFM table through a full round-trip", () => {
-		const source = "| a | b |\n| - | - |\n| 1 | 2 |\n";
+	// Tables and images are editable now; the fallback remains for everything
+	// the schema will never model — design decision D8 of tables-and-images.
+	it("keeps the fallback registered for node types with no handler", () => {
+		const doc = mdastToPm({ type: "root", children: [{ type: "html", value: "<div>raw</div>" }] });
 
-		expect(serializeMarkdown(roundTripTree(source))).toBe(source);
+		expect(firstChild(doc).type.name).toBe("preserved");
 	});
 
 	it("preserves YAML frontmatter through a full round-trip", () => {
 		const source = "---\ntitle: Doc\n---\n\nBody\n";
+
+		expect(serializeMarkdown(roundTripTree(source))).toBe(source);
+	});
+
+	it("preserves a raw HTML block through a full round-trip", () => {
+		const source = "<details>\n<summary>More</summary>\n</details>\n";
+
+		expect(serializeMarkdown(roundTripTree(source))).toBe(source);
+	});
+
+	it("preserves a GFM footnote, which the schema does not model, through a full round-trip", () => {
+		const source = "Claim.[^1]\n\n[^1]: Source.\n";
 
 		expect(serializeMarkdown(roundTripTree(source))).toBe(source);
 	});
@@ -161,13 +181,13 @@ describe("preservation of unsupported content", () => {
 	});
 
 	it("uses a block preservation node for block content", () => {
-		const doc = mdastToPm(parseMarkdown("| a |\n| - |\n| 1 |\n"));
+		const doc = mdastToPm(parseMarkdown("<div>raw</div>\n"));
 
 		expect(firstChild(doc).type.name).toBe("preserved");
 	});
 
 	it("uses an inline preservation node for phrasing content", () => {
-		const doc = mdastToPm(parseMarkdown("Text with ![alt](image.png).\n"));
+		const doc = mdastToPm(parseMarkdown("Press <kbd>Ctrl</kbd> now.\n"));
 		const paragraph = firstChild(doc);
 		const types = new Set<string>();
 
@@ -178,14 +198,14 @@ describe("preservation of unsupported content", () => {
 	});
 
 	it("stores the preserved subtree as plain data", () => {
-		const doc = mdastToPm(parseMarkdown("| a |\n| - |\n| 1 |\n"));
+		const doc = mdastToPm(parseMarkdown("<div>raw</div>\n"));
 		const stored = firstChild(doc).attrs.mdast;
 
 		expect(stored).toEqual(structuredClone(stored));
 	});
 
 	it("does not alias the source tree, so later edits cannot mutate it", () => {
-		const tree = parseMarkdown("| a |\n| - |\n| 1 |\n");
+		const tree = parseMarkdown("<div>raw</div>\n");
 		const doc = mdastToPm(tree);
 
 		expect(firstChild(doc).attrs.mdast).not.toBe(tree.children[0]);

@@ -11,7 +11,14 @@ import { renderNode } from "./renderNode";
  * derived it (the session store, for the outline panel) does not pay for it
  * twice; it defaults to deriving its own, which keeps this callable with just
  * a tree, as node coverage tests do.
+ *
+ * `documentPath` is the file the tree came from, which relative image
+ * references resolve against.
  */
-export function renderMdast(tree: Root, outline: Outline = deriveOutline(tree)): ReactNode {
-	return renderNode(tree, 0, { headingIds: outline.idsByHeading });
+export function renderMdast(
+	tree: Root,
+	outline: Outline = deriveOutline(tree),
+	documentPath: string | null = null,
+): ReactNode {
+	return renderNode(tree, 0, { headingIds: outline.idsByHeading, documentPath });
 }

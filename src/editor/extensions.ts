@@ -1,10 +1,15 @@
-import { Mark, Node } from "@tiptap/core";
+import { Extension, Mark, Node, type NodeViewRendererProps } from "@tiptap/core";
 import type { MarkSpec, NodeSpec } from "@tiptap/pm/model";
+import { columnResizing, tableEditing } from "@tiptap/pm/tables";
+import type { NodeView } from "@tiptap/pm/view";
 import StarterKit from "@tiptap/starter-kit";
 import { marks, nodes } from "../core/schema";
 import { createEditingBehaviorExtension } from "./editingBehavior";
+import { createImageInsertionPlugin, type ImageInsertionContext } from "./imageInsertion";
+import { ImageView } from "./imageView";
 import { createInputRulesExtension } from "./inputRules";
 import { createShortcutsExtension } from "./shortcuts";
+import { createTableAlignmentPlugin, createTableNormalizePlugin } from "./tables";
 
 /**
  * D1: the editor's schema comes only from `src/core/schema/`. StarterKit is
@@ -44,7 +49,7 @@ const history = StarterKit.configure({
  * content, group and DOM rules all come from `spec`, defined once in
  * `src/core/schema/nodes.ts`. See design decision D1.
  */
-function createNodeExtension(name: string, spec: NodeSpec) {
+function createNodeExtension(name: string, spec: NodeSpec, nodeView?: NodeViewFactory) {
 	return Node.create({
 		name,
 		topNode: name === "doc" ? true : undefined,
@@ -53,9 +58,13 @@ function createNodeExtension(name: string, spec: NodeSpec) {
 		inline: spec.inline,
 		atom: spec.atom,
 		selectable: spec.selectable,
+		draggable: spec.draggable,
 		defining: spec.defining,
+		isolating: spec.isolating,
 		code: spec.code,
 		marks: spec.marks,
+
+		addNodeView: nodeView ? () => nodeView : undefined,
 
 		addAttributes() {
 			return adaptAttributes(spec.attrs);
@@ -67,6 +76,54 @@ function createNodeExtension(name: string, spec: NodeSpec) {
 
 		renderHTML({ node }) {
 			return spec.toDOM ? spec.toDOM(node) : [name, 0];
+		},
+	});
+}
+
+type NodeViewFactory = (props: NodeViewRendererProps) => NodeView;
+
+/**
+ * Carries the node spec fields Tiptap has no named option for — only
+ * `tableRole`, which `prosemirror-tables` reads to find the table, row and
+ * cell types. Tiptap calls this once per node type, with that type's
+ * extension, so it answers from the core spec of the same name.
+ */
+const coreSpecFields = Extension.create({
+	name: "markflowCoreSpecFields",
+
+	extendNodeSchema(extension) {
+		const spec = nodes[extension.name as keyof typeof nodes] as NodeSpec | undefined;
+
+		return spec?.tableRole ? { tableRole: spec.tableRole as string } : {};
+	},
+});
+
+/**
+ * Table behavior from `prosemirror-tables` (design decision D1): cell
+ * selection, arrow keys across cells and column resizing, plus the plugins
+ * that keep a table in the shape GFM can write and draw its alignment.
+ * Column widths are view state: resizing writes `colwidth` on the cells,
+ * which the mapping never reads, so it changes nothing on disk.
+ */
+const tables = Extension.create({
+	name: "markflowTables",
+
+	addProseMirrorPlugins() {
+		return [
+			columnResizing({ cellMinWidth: 48 }),
+			tableEditing(),
+			createTableNormalizePlugin(),
+			createTableAlignmentPlugin(),
+		];
+	},
+});
+
+function createImagesExtension(context: ImageInsertionContext) {
+	return Extension.create({
+		name: "markflowImages",
+
+		addProseMirrorPlugins() {
+			return [createImageInsertionPlugin(context)];
 		},
 	});
 }
@@ -111,18 +168,26 @@ function adaptAttributes(attrs: NodeSpec["attrs"] | MarkSpec["attrs"]) {
 /**
  * The editor's full extension list: the core node and mark sets, one adapter
  * per type, history for undo/redo, and the behavior built on top of the
- * schema — shortcuts, list keys, input rules, task checkboxes and link paste.
+ * schema — shortcuts, list keys, input rules, task checkboxes, link paste,
+ * table editing and image insertion.
  * No StarterKit node or mark is registered — see design decision D1 of
  * `openspec/changes/document-editor-base/design.md`.
  */
 export function createExtensions(options: EditorBehaviorOptions) {
+	const nodeViews: Partial<Record<string, NodeViewFactory>> = {
+		image: ({ node, view, getPos }) => new ImageView(node, view, getPos, options.images.getDocumentPath),
+	};
+
 	return [
 		history,
-		...Object.entries(nodes).map(([name, spec]) => createNodeExtension(name, spec as NodeSpec)),
+		coreSpecFields,
+		...Object.entries(nodes).map(([name, spec]) => createNodeExtension(name, spec as NodeSpec, nodeViews[name])),
 		...Object.entries(marks).map(([name, spec]) => createMarkExtension(name, spec)),
 		createInputRulesExtension(options.isInputRulesEnabled),
 		createShortcutsExtension(options.onOpenLink),
 		createEditingBehaviorExtension(),
+		tables,
+		createImagesExtension(options.images),
 	];
 }
 
@@ -131,4 +196,6 @@ export interface EditorBehaviorOptions {
 	isInputRulesEnabled(): boolean;
 	/** Invoked by the link shortcut. The affordance itself lives in `src/ui/`. */
 	onOpenLink(): void;
+	/** The document and workspace images are resolved against and written beside. */
+	images: ImageInsertionContext;
 }

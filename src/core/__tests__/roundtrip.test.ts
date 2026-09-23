@@ -28,8 +28,11 @@ describe("structural invariant: a ProseMirror round trip preserves the tree", ()
 		const source = readFixture(fixture);
 		const direct = parseMarkdown(source);
 		const roundTripped = parseMarkdown(serializeMarkdown(pmToMdast(mdastToPm(direct))));
+		// See `serializerNormalizes` in the manifest: for these, the baseline is
+		// what serialization without the editor already produces.
+		const expected = fixture.serializerNormalizes ? parseMarkdown(serializeMarkdown(direct)) : direct;
 
-		expect(stripPositions(roundTripped)).toEqual(stripPositions(direct));
+		expect(stripPositions(roundTripped)).toEqual(stripPositions(expected));
 	});
 });
 

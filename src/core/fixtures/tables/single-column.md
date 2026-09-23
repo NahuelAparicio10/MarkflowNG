@@ -1,0 +1,4 @@
+| Enemies |
+| ------- |
+| Ghoul   |
+| Wraith  |

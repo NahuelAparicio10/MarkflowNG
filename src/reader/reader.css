@@ -1,26 +1,9 @@
 /*
- * Reader-only presentation: node types the editor schema does not model yet
- * (tables, images, raw HTML) and layout for the reader shell itself.
- * Presentation shared with the editor — including lists, quotes, code and
- * rules — lives in src/ui/typography.css instead; see docs/architecture.md.
+ * Reader-only presentation: node types the editor schema does not model
+ * (raw HTML) and layout for the reader shell itself. Presentation shared with
+ * the editor — including lists, quotes, code, rules, tables and images —
+ * lives in src/ui/typography.css instead; see docs/architecture.md.
  */
-
-.markflow-prose table {
-	margin-block: var(--markflow-paragraph-spacing, 1em);
-	border-collapse: collapse;
-	width: 100%;
-}
-
-.markflow-prose th,
-.markflow-prose td {
-	border: 1px solid currentColor;
-	padding: 0.4em 0.6em;
-	text-align: left;
-}
-
-.markflow-prose img {
-	max-width: 100%;
-}
 
 /* Frontmatter-adjacent, unexecuted HTML: shown as inert source, not markup. */
 .markflow-raw-html {

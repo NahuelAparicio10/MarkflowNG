@@ -8,13 +8,10 @@ import { readFixture } from "../../core/__tests__/helpers";
 
 /**
  * Fixtures containing only node types the editor schema models: text blocks,
- * marks, lists and task items, quotes, code blocks and rules. `real/*`
- * fixtures still contain tables and images, which travel through the
- * `preserved` node, so they are out of scope until a later change adds
- * handlers for them — see the "Parity test grows with the schema" spec
- * scenario. `blocks/mixed-lists.md` is left out for the same reason: it
- * separates two lists with an HTML comment, which the reader shows as raw
- * text and the editor as a preserved placeholder.
+ * marks, lists and task items, quotes, code blocks, rules, tables and images.
+ * `blocks/mixed-lists.md` is left out because it separates two lists with an
+ * HTML comment, which the reader shows as raw text and the editor as a
+ * preserved placeholder — the fallback, not a schema gap.
  */
 const SUPPORTED_FIXTURE_PATHS = new Set([
 	"edge/empty.md",
@@ -37,6 +34,21 @@ const SUPPORTED_FIXTURE_PATHS = new Set([
 	"blocks/blockquotes.md",
 	"blocks/code-blocks.md",
 	"blocks/thematic-breaks.md",
+	"tables/empty-cells.md",
+	"tables/inline-content.md",
+	"tables/single-column.md",
+	"tables/single-row.md",
+	"tables/alignment.md",
+	"tables/pipes-and-escapes.md",
+	"tables/compact.md",
+	"tables/ragged-rows.md",
+	"images/relative-paths.md",
+	"images/absolute-urls.md",
+	"images/alt-text.md",
+	"images/titles.md",
+	"real/readme.md",
+	"real/architecture.md",
+	"real/explore.md",
 ]);
 
 const supportedFixtures = FIXTURES.filter((fixture) => SUPPORTED_FIXTURE_PATHS.has(fixture.path));
@@ -81,4 +93,33 @@ describe("reader and editor render fixtures with equivalent text content", () =>
 			expect(editorText(source)).toBe(readerText(source));
 		},
 	);
+});
+
+function count(pattern: RegExp, text: string): number {
+	return (text.match(pattern) ?? []).length;
+}
+
+/**
+ * Text parity cannot see an image, which has no text, or tell a dropped empty
+ * cell from whitespace. These count them in both modes instead.
+ */
+describe("reader and editor render the same images and table cells", () => {
+	it.each(supportedFixtures.map((fixture) => [fixture.path, fixture] as const))("%s", (_path, fixture) => {
+		const source = readFixture(fixture);
+		const html = renderToStaticMarkup(<>{renderMdast(parseMarkdown(source))}</>);
+		const doc = mdastToPm(parseMarkdown(source));
+		const editorCounts = { images: 0, headerCells: 0, cells: 0 };
+
+		doc.descendants((node) => {
+			if (node.type.name === "image") editorCounts.images++;
+			if (node.type.name === "tableHeader") editorCounts.headerCells++;
+			if (node.type.name === "tableCell") editorCounts.cells++;
+		});
+
+		expect({
+			images: count(/<img[\s>]/g, html),
+			headerCells: count(/<th[\s>]/g, html),
+			cells: count(/<td[\s>]/g, html),
+		}).toEqual(editorCounts);
+	});
 });

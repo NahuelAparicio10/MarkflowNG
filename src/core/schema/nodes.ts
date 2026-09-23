@@ -172,6 +172,168 @@ const thematicBreak: NodeSpec = {
 	},
 };
 
+/** Column alignments GFM can express. `null` is the default, unaligned column. */
+export const TABLE_ALIGNMENTS = ["left", "center", "right", null] as const;
+
+export type TableAlignment = (typeof TABLE_ALIGNMENTS)[number];
+
+function isTableAlignment(value: unknown): value is TableAlignment {
+	return TABLE_ALIGNMENTS.includes(value as TableAlignment);
+}
+
+/**
+ * A GFM table. The node types and their `tableRole`s follow the model
+ * `prosemirror-tables` operates on, so its selection, navigation and row and
+ * column commands work unchanged — see design decision D1.
+ *
+ * Alignment is a per-column array on the table, exactly as mdast stores it,
+ * rather than an attribute of each cell — design decision D3. Cells in one
+ * column therefore cannot disagree, because there is nowhere to store the
+ * disagreement.
+ *
+ * The first row is always the header row (D4). The schema cannot say that
+ * with content expressions alone, since `prosemirror-tables` needs a single
+ * row type, so the editor keeps it true with a normalizing plugin and the
+ * mapping builds it that way on load.
+ */
+const table: NodeSpec = {
+	attrs: {
+		align: {
+			default: [],
+			validate(value: unknown) {
+				if (!Array.isArray(value) || !value.every(isTableAlignment)) {
+					throw new RangeError(`Invalid table alignment: ${JSON.stringify(value)}`);
+				}
+			},
+		},
+	},
+	content: "tableRow+",
+	group: "block",
+	tableRole: "table",
+	isolating: true,
+	parseDOM: [{ tag: "table" }],
+	toDOM() {
+		return ["table", ["tbody", 0]];
+	},
+};
+
+const tableRow: NodeSpec = {
+	content: "(tableHeader | tableCell)+",
+	tableRole: "row",
+	parseDOM: [{ tag: "tr" }],
+	toDOM() {
+		return ["tr", 0];
+	},
+};
+
+/**
+ * `prosemirror-tables` reads and writes `colspan` and `rowspan` on every cell,
+ * so the attributes exist, but a GFM table cannot hold a merged cell. Anything
+ * other than 1 is rejected, so a merged cell is a state the document cannot
+ * reach rather than one flattened on save — design decision D2.
+ */
+function singleSpan(name: string) {
+	return {
+		default: 1,
+		validate(value: unknown) {
+			if (value !== 1) {
+				throw new RangeError(`Merged cells are not supported: ${name} ${String(value)}`);
+			}
+		},
+	};
+}
+
+/**
+ * Attributes shared by header and body cells. `colwidth` is what column
+ * resizing writes; it is view state only, which the mapping never reads, so a
+ * resized table serializes exactly as before.
+ */
+const cellAttrs = {
+	colspan: singleSpan("colspan"),
+	rowspan: singleSpan("rowspan"),
+	colwidth: { default: null },
+};
+
+/**
+ * GFM cells hold one line of phrasing content, so a cell is itself a
+ * textblock rather than a container of paragraphs. Lists, quotes and code
+ * blocks cannot be put in one, because the format has nowhere to put them.
+ */
+const tableCell: NodeSpec = {
+	attrs: cellAttrs,
+	content: "inline*",
+	tableRole: "cell",
+	isolating: true,
+	parseDOM: [{ tag: "td" }],
+	toDOM() {
+		return ["td", 0];
+	},
+};
+
+const tableHeader: NodeSpec = {
+	attrs: cellAttrs,
+	content: "inline*",
+	tableRole: "header_cell",
+	isolating: true,
+	parseDOM: [{ tag: "th" }],
+	toDOM() {
+		return ["th", 0];
+	},
+};
+
+/**
+ * An image reference. `src`, `alt` and `title` are the mdast fields verbatim;
+ * `width` is the display size decoded from the title — see design decision D7
+ * and `src/core/images/titleSize.ts`. `null` means never resized.
+ *
+ * The rendered `src` here is the reference as written. Resolving it against
+ * the document's directory needs the file system, so the editor draws images
+ * through its own node view; this `toDOM` is only the fallback serialization.
+ */
+const image: NodeSpec = {
+	attrs: {
+		src: { default: "" },
+		alt: { default: "" },
+		// `null` rather than absent, matching what remark produces.
+		title: { default: null },
+		width: { default: null },
+	},
+	inline: true,
+	group: "inline",
+	atom: true,
+	draggable: true,
+	parseDOM: [
+		{
+			tag: "img[src]",
+			getAttrs(dom) {
+				return { src: dom.getAttribute("src") ?? "", alt: dom.getAttribute("alt") ?? "", title: dom.getAttribute("title") };
+			},
+		},
+	],
+	toDOM(node) {
+		return [
+			"img",
+			{
+				src: renderedSrc(node.attrs.src),
+				alt: node.attrs.alt as string,
+				title: node.attrs.title as string | null,
+				width: node.attrs.width as number | null,
+			},
+		];
+	},
+};
+
+const UNSAFE_URL_PATTERN = /^\s*javascript:/i;
+
+/** Mirrors `renderedHref` in marks.ts: the stored reference is kept verbatim. */
+function renderedSrc(src: unknown): string | null {
+	if (typeof src !== "string" || UNSAFE_URL_PATTERN.test(src)) {
+		return null;
+	}
+
+	return src;
+}
+
 const text: NodeSpec = {
 	group: "inline",
 };
@@ -210,8 +372,9 @@ const preservedInline: NodeSpec = {
 
 /**
  * The node set the round-trip is closed over. Anything not modelled here —
- * tables, images and frontmatter, until a later change — travels through a
- * preservation node instead of being dropped.
+ * frontmatter, raw HTML, and whatever remark produces that this project has
+ * not anticipated — travels through a preservation node instead of being
+ * dropped.
  *
  * `paragraph` must stay the first block type: ProseMirror fills required block
  * content with the first type in the group.
@@ -225,7 +388,12 @@ export const nodes = {
 	blockquote,
 	codeBlock,
 	thematicBreak,
+	table,
+	tableRow,
+	tableHeader,
+	tableCell,
 	text,
+	image,
 	preserved,
 	preservedInline,
 };

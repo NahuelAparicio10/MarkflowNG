@@ -3,9 +3,10 @@
  *
  * Neither mode may define its own font family, font size, heading scale, line
  * height, paragraph spacing or list indentation — see docs/architecture.md.
- * Block elements both modes render — task items, quotes, code and rules — are
- * styled here too, so the reader and the editor cannot drift apart. What only
- * the reader renders (tables, images, raw HTML) lives in src/reader/reader.css.
+ * Block elements both modes render — task items, quotes, code, rules, tables
+ * and images — are styled here too, so the reader and the editor cannot drift
+ * apart. What only the reader renders (raw HTML) lives in
+ * src/reader/reader.css.
  */
 
 .markflow-prose {
@@ -118,4 +119,34 @@
 	border: none;
 	border-top: 1px solid currentColor;
 	opacity: 0.3;
+}
+
+.markflow-prose table {
+	margin-block: var(--markflow-paragraph-spacing, 1em);
+	border-collapse: collapse;
+	width: 100%;
+}
+
+.markflow-prose th,
+.markflow-prose td {
+	border: 1px solid currentColor;
+	padding: 0.4em 0.6em;
+	/* Column alignment is applied inline, per cell, by both modes. */
+	text-align: left;
+	vertical-align: top;
+}
+
+.markflow-prose img {
+	max-width: 100%;
+}
+
+/* An image reference whose file cannot be loaded: the reference stays in the
+   document untouched, and this names it so the break is visible. */
+.markflow-prose .markflow-image-missing {
+	display: inline-block;
+	padding: 0.1em 0.5em;
+	border: 1px dashed currentColor;
+	border-radius: 4px;
+	font-size: 0.85em;
+	opacity: 0.7;
 }

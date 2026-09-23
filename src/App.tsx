@@ -22,6 +22,7 @@ export default function App() {
 	const documents = useSessionStore((state) => state.documents);
 	const active = useSessionStore(selectActiveDocument);
 	const error = useSessionStore((state) => state.error);
+	const notice = useSessionStore((state) => state.notice);
 	const workspaceRoot = useWorkspaceStore((state) => state.root);
 	const scanning = useWorkspaceStore((state) => state.scanning);
 	const previewPath = useWorkspaceStore((state) => state.previewPath);
@@ -87,6 +88,15 @@ export default function App() {
 			<TabStrip />
 
 			{error ? <p className="border-b border-black/10 px-4 py-2 text-sm text-red-600 dark:border-white/10">{error}</p> : null}
+
+			{notice ? (
+				<p role="status" className="flex items-center justify-between gap-4 border-b border-black/10 px-4 py-2 text-sm dark:border-white/10">
+					<span>{notice}</span>
+					<button type="button" onClick={() => useSessionStore.getState().setNotice(null)}>
+						Dismiss
+					</button>
+				</p>
+			) : null}
 
 			{active && !isPreviewing ? <ExternalChangeBanner document={active} /> : null}
 

@@ -14,6 +14,16 @@ export interface Fixture {
 	normalized: boolean;
 	/** Why this fixture exists, so a failure says what broke. */
 	covers: string;
+	/**
+	 * Set, with the reason, when remark's own serializer changes this
+	 * document's structure — a ragged table row comes back padded even
+	 * without the editor involved. The structural invariant is then measured
+	 * against remark's own round trip rather than the first parse: the
+	 * mapping must lose nothing beyond what serialization alone already
+	 * changes. Every such fixture has a dedicated test asserting the
+	 * normalized result, so the change is deliberate rather than incidental.
+	 */
+	serializerNormalizes?: string;
 }
 
 export const FIXTURES: readonly Fixture[] = [
@@ -121,6 +131,67 @@ export const FIXTURES: readonly Fixture[] = [
 		path: "blocks/thematic-breaks.md",
 		normalized: true,
 		covers: "thematic breaks between paragraphs and at the end of a document",
+	},
+	{
+		path: "tables/empty-cells.md",
+		normalized: true,
+		covers: "empty cells, including a wholly empty row",
+	},
+	{
+		path: "tables/inline-content.md",
+		normalized: true,
+		covers: "cells containing marks, overlapping marks, code, links with titles and an image",
+	},
+	{
+		path: "tables/single-column.md",
+		normalized: true,
+		covers: "a single-column table",
+	},
+	{
+		path: "tables/single-row.md",
+		normalized: true,
+		covers: "a table with a header row and no body rows",
+	},
+	{
+		path: "tables/alignment.md",
+		normalized: true,
+		covers: "left, centre, right and default alignment, together and in single-column tables",
+	},
+	{
+		path: "tables/pipes-and-escapes.md",
+		normalized: true,
+		covers: "escaped pipes in text and in code, escaped emphasis and brackets, and a literal backslash",
+	},
+	{
+		path: "tables/compact.md",
+		normalized: false,
+		covers: "a hand-written table with no padding and uneven spacing",
+	},
+	{
+		path: "tables/ragged-rows.md",
+		normalized: false,
+		covers: "rows shorter than the header, which are padded with empty cells on load",
+		serializerNormalizes: "remark-stringify pads short table rows with empty cells",
+	},
+	{
+		path: "images/relative-paths.md",
+		normalized: true,
+		covers: "relative image paths: sibling, subfolder, parent, dot-slash and one containing spaces",
+	},
+	{
+		path: "images/absolute-urls.md",
+		normalized: true,
+		covers: "absolute image URLs, one with a query string, one inline in text, and a linked image",
+	},
+	{
+		path: "images/alt-text.md",
+		normalized: true,
+		covers: "images with and without alt text, and two images in one paragraph",
+	},
+	{
+		path: "images/titles.md",
+		normalized: true,
+		covers: "titles written by another tool, near-misses of the size encoding, and encoded sizes",
 	},
 	{
 		path: "real/readme.md",

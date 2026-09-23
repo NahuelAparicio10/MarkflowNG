@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -72,7 +72,7 @@ describe("byte-identical round trip on disk", () => {
 });
 
 describe("content beyond the editable schema survives a save", () => {
-	it("keeps frontmatter, a table, an image and a code block intact when an unrelated paragraph is edited", async () => {
+	it("keeps frontmatter, raw HTML, a footnote, a table, an image and a code block intact when a paragraph is edited", async () => {
 		const { loadDocument } = await import("../loadDocument");
 		const { saveDocument } = await import("../saveDocument");
 
@@ -83,17 +83,23 @@ describe("content beyond the editable schema survives a save", () => {
 			"",
 			"# Heading",
 			"",
-			"Body paragraph.",
+			"Body paragraph.[^note]",
+			"",
+			"<details>",
+			"<summary>Raw HTML</summary>",
+			"</details>",
 			"",
 			"![Diagram](diagram.png)",
 			"",
 			"| A | B |",
-			"| --- | --- |",
+			"| - | - |",
 			"| 1 | 2 |",
 			"",
 			"```js",
 			'console.log("hi");',
 			"```",
+			"",
+			"[^note]: A footnote the schema does not model.",
 			"",
 		].join("\n");
 
@@ -101,6 +107,16 @@ describe("content beyond the editable schema survives a save", () => {
 		writeFileSync(filePath, source, "utf8");
 
 		const doc = await loadDocument(filePath);
+
+		// Frontmatter, the HTML block and the footnote definition have no node
+		// type of their own; they must still be carried by the fallback.
+		const preserved: string[] = [];
+		doc.descendants((node) => {
+			if (node.type.name === "preserved" || node.type.name === "preservedInline") {
+				preserved.push((node.attrs.mdast as { type: string }).type);
+			}
+		});
+		expect(preserved.sort()).toEqual(["footnoteDefinition", "footnoteReference", "html", "yaml"]);
 
 		// Simulate an edit to the one paragraph the schema models, without a
 		// real DOM-backed editor: rebuild the doc from JSON with that node's
@@ -113,11 +129,48 @@ describe("content beyond the editable schema survives a save", () => {
 		await saveDocument(filePath, editedDoc);
 
 		const after = readFileSync(filePath, "utf8");
-		expect(after).toContain("title: Test document");
-		expect(after).toContain("| A | B |");
-		expect(after).toContain("![Diagram](diagram.png)");
-		expect(after).toContain('console.log("hi");');
-		expect(after).toContain("Body paragraph, edited.");
+		expect(after).toBe(source.replace("Body paragraph.", "Body paragraph, edited."));
+	});
+});
+
+describe("image references on disk", () => {
+	it("leaves every image reference byte-identical through an open-and-save cycle", async () => {
+		const { loadDocument } = await import("../loadDocument");
+		const { saveDocument } = await import("../saveDocument");
+
+		const source = [
+			"![Sibling](diagram.png)",
+			"",
+			"![Parent](../shared/logo.svg)",
+			"",
+			"![Spaces](<assets/boss arena.png>)",
+			"",
+			"![Escaped](assets/boss%20arena.png)",
+			"",
+			"![Remote](https://example.com/render?id=42\\&size=large)",
+			"",
+			"![Absolute](/home/me/Pictures/a.png)",
+			"",
+			'![Foreign](shot.png "Taken by another tool")',
+			"",
+			'![Near miss](shot.png "Caption |width=320")',
+			"",
+			'![Sized](shot.png "Arena | width=640")',
+			"",
+			"| Icon |",
+			"| ---- |",
+			"| ![](icons/bow.png) |",
+			"",
+		].join("\n");
+		const normalized = serializeMarkdown(parseMarkdown(source));
+		const filePath = join(tempDir, "docs", "images.md");
+		mkdirSync(join(tempDir, "docs"));
+		writeFileSync(filePath, normalized, "utf8");
+
+		const doc = await loadDocument(filePath);
+		await saveDocument(filePath, doc);
+
+		expect(readFileSync(filePath, "utf8")).toBe(normalized);
 	});
 });
 

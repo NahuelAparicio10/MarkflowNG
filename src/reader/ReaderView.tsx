@@ -9,8 +9,12 @@ import { renderMdast } from "./renderMdast";
 export default function ReaderView() {
 	const tree = useSessionStore((state) => selectActiveDocument(state)?.tree ?? null);
 	const outline = useSessionStore((state) => selectActiveDocument(state)?.outline ?? null);
+	const path = useSessionStore((state) => selectActiveDocument(state)?.path ?? null);
 
-	const content = useMemo(() => (tree && outline ? renderMdast(tree, outline) : null), [tree, outline]);
+	const content = useMemo(
+		() => (tree && outline ? renderMdast(tree, outline, path) : null),
+		[tree, outline, path],
+	);
 
 	if (!tree) {
 		return null;

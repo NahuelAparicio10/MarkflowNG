@@ -1,5 +1,5 @@
 import { parseMarkdown } from "../core/markdown";
-import { installEditorFsHatch, readEditorFsHatch, remove, writeTextFile } from "../editor/fs";
+import { hasEditorFsHatchFile, installEditorFsHatch, readEditorFsHatch, remove, writeTextFile } from "../editor/fs";
 import { setWorkspaceBackend } from "../explorer/backend";
 import { createMemoryWorkspaceBackend, fileEntry, type MemoryWorkspaceBackend } from "../explorer/memoryBackend";
 import { openWorkspace } from "../explorer/openWorkspace";
@@ -22,6 +22,8 @@ declare global {
 		__markflowLoadWorkspace?: (files: Record<string, string>) => Promise<void>;
 		/** Dev/e2e only. Reads back a workspace file by root-relative path. */
 		__markflowReadWorkspaceFile?: (relativePath: string) => string | undefined;
+		/** Dev/e2e only. Whether a workspace file exists, binary ones included. */
+		__markflowHasWorkspaceFile?: (relativePath: string) => boolean;
 		/**
 		 * Dev/e2e only. Changes a workspace file as another program would —
 		 * `null` deletes it — and reports it through the watcher.
@@ -72,6 +74,9 @@ export function installDevFixtureHatch(): void {
 
 	window.__markflowReadWorkspaceFile = (relativePath) =>
 		readEditorFsHatch(joinWorkspacePath(WORKSPACE_ROOT, relativePath));
+
+	window.__markflowHasWorkspaceFile = (relativePath) =>
+		hasEditorFsHatchFile(joinWorkspacePath(WORKSPACE_ROOT, relativePath));
 
 	window.__markflowChangeExternally = async (relativePath, content) => {
 		const path = joinWorkspacePath(WORKSPACE_ROOT, relativePath);

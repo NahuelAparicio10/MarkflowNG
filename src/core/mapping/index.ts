@@ -3,6 +3,7 @@ import { blockquoteHandler } from "./handlers/blockquote";
 import { codeBlockHandler } from "./handlers/codeBlock";
 import { emphasisHandler } from "./handlers/emphasis";
 import { createHeadingHandler } from "./handlers/heading";
+import { imageHandler } from "./handlers/image";
 import { inlineCodeHandler } from "./handlers/inlineCode";
 import { linkHandler } from "./handlers/link";
 import { listHandler } from "./handlers/list";
@@ -11,6 +12,12 @@ import { createParagraphHandler } from "./handlers/paragraph";
 import type { HandlerLookup } from "./handlers/phrasing";
 import { strikethroughHandler } from "./handlers/strikethrough";
 import { strongHandler } from "./handlers/strong";
+import {
+	createTableCellHandler,
+	createTableHeaderHandler,
+	tableHandler,
+	tableRowHandler,
+} from "./handlers/table";
 import { textHandler } from "./handlers/text";
 import { thematicBreakHandler } from "./handlers/thematicBreak";
 import { createMdastToPm } from "./mdastToPm";
@@ -46,6 +53,11 @@ const handlerPairs: NodeHandlerPair[] = [
 	blockquoteHandler,
 	codeBlockHandler,
 	thematicBreakHandler,
+	tableHandler,
+	tableRowHandler,
+	createTableHeaderHandler(lookup),
+	createTableCellHandler(lookup),
+	imageHandler,
 ];
 
 export const registry = createRegistry(handlerPairs);

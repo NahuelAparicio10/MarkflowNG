@@ -28,9 +28,11 @@ vista previa del explorador y la capa de IA.
    familia de fuente, escala de tamaño, escala de encabezados, interlineado,
    espaciado de párrafo y sangría de listas, consumida por el visor y, desde
    la fase 2, por el editor. Ninguno de los dos modos redefine estas reglas;
-   lo específico de cada modo (caret, selección, toolbar en el editor; tablas,
-   HTML crudo, bloques de código en el visor) vive en hojas de estilo locales
-   como `src/reader/reader.css`.
+   lo específico de cada modo (caret, selección, toolbar en el editor; HTML
+   crudo en el visor) vive en hojas de estilo locales como
+   `src/reader/reader.css`. Desde la fase 3, los bloques que ambos modos
+   renderizan (tareas, citas, código, reglas) también se estilan en
+   `typography.css`, y desde la fase 5 también las tablas y las imágenes.
 
 ## Capas
 
@@ -72,6 +74,41 @@ bloque/línea de ProseMirror es una propiedad del tipo de nodo —un nodo no pue
 ser ambas cosas—, así que una tabla no soportada y un fragmento de énfasis no
 soportado no pueden compartir tipo. Se comportan igual en todo lo demás y ambos
 devuelven su subárbol literal al convertir de vuelta a mdast.
+
+## Registro de mapeo: resultado de la fase 3
+
+La fase 3 (`inline-block-formatting`) era la primera prueba real del registro
+de pares de manejadores. Se añadieron cinco marcas (`strong`, `emphasis`,
+`strikethrough`, `inlineCode`, `link`) y cinco tipos de bloque (`list`,
+`listItem`, `blockquote`, `codeBlock`, `thematicBreak`).
+
+**El registro aguantó sin tocar el núcleo.** Bajo `src/core/mapping/` solo
+cambiaron el punto de composición (`index.ts`) y módulos de `handlers/`; ni
+`registry.ts`, ni `types.ts`, ni los recorredores `mdastToPm.ts`/`pmToMdast.ts`
+se modificaron. Aun así, la prueba reveló dos límites del diseño que conviene
+dejar escritos:
+
+1. **El registro es uno a uno entre tipos mdast y tipos ProseMirror.** mdast
+   tiene un único `list` con `ordered`; dos tipos ProseMirror (`bulletList`,
+   `orderedList`) no podrían mapear de vuelta al mismo tipo mdast sin cambiar el
+   registro. Se resolvió modelando un solo nodo `list` con atributo `ordered`,
+   igual que mdast (decisión D9 del cambio). Si una fase futura necesita de
+   verdad una relación varios-a-uno, habrá que ampliar el registro.
+2. **Las marcas no son nodos en ProseMirror.** La dirección mdast → ProseMirror
+   funciona por nodo sin cambios: el manejador de `strong` convierte sus hijos y
+   les añade la marca. La inversa no puede ser por nodo, porque el anidamiento
+   hay que reconstruirlo a partir de la secuencia de hermanos. Se resolvió dentro
+   de `handlers/`: los manejadores de bloques de texto (`paragraph`, `heading`)
+   pasaron a ser fábricas que reciben una búsqueda en el registro, y convierten
+   su contenido en línea con `handlers/phrasing.ts`, que llama al manejador
+   registrado de cada marca. El punto de composición inyecta esa búsqueda.
+
+Las marcas que cubren exactamente el mismo tramo no tienen orden de anidamiento
+propio en ProseMirror; se anidan según el rango del esquema (link, emphasis,
+strong, strikethrough, inlineCode), elegido para coincidir con lo que remark
+produce en `***x***` y `[**x**](url)`. En consecuencia `**[x](url)**` vuelve
+como `[**x**](url)`: se renderiza igual, pero el árbol es distinto. Es la única
+pérdida estructural conocida del mapeo y no aparece en el corpus.
 
 ## Criterio de migración a Rust
 

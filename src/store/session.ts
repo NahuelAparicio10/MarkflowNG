@@ -54,6 +54,11 @@ export interface SessionState {
 	documents: OpenDocument[];
 	activePath: string | null;
 	error: string | null;
+	/**
+	 * A passing, non-error message — for instance where a pasted image was
+	 * written. Shown until dismissed or replaced.
+	 */
+	notice: string | null;
 
 	/**
 	 * Opens `filePath` as a new tab and activates it. If it is already open,
@@ -66,6 +71,7 @@ export interface SessionState {
 	/** Cycles the active document reader → raw → editor → reader. */
 	cycleMode(): void;
 	setError(message: string | null): void;
+	setNotice(message: string | null): void;
 	setDirty(filePath: string, dirty: boolean): void;
 	/** Replaces a document's snapshot with a fresh read from disk. */
 	reloadDocument(filePath: string, tree: Root): void;
@@ -80,6 +86,7 @@ export const useSessionStore = create<SessionState>()((set, get) => ({
 	documents: [],
 	activePath: null,
 	error: null,
+	notice: null,
 
 	openDocument(filePath, tree) {
 		const alreadyOpen = get().documents.some((document) => document.path === filePath);
@@ -132,6 +139,10 @@ export const useSessionStore = create<SessionState>()((set, get) => ({
 
 	setError(message) {
 		set({ error: message });
+	},
+
+	setNotice(message) {
+		set({ notice: message });
 	},
 
 	setDirty(filePath, dirty) {

@@ -2,6 +2,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { parseMarkdown } from "../core/markdown";
 import { readTextFile } from "../editor/fs";
 import { recordLoadedContent } from "../explorer/selfWrites";
+import { allowDocumentDirectory } from "../images/documentScope";
 import { selectDocument, useSessionStore } from "./session";
 
 /**
@@ -40,6 +41,8 @@ export async function openFileAtPath(path: string): Promise<void> {
 	try {
 		const source = await readTextFile(path);
 		recordLoadedContent(path, source);
+		// Before the document renders, so its images resolve on first paint.
+		await allowDocumentDirectory(path);
 		const tree = parseMarkdown(source);
 		useSessionStore.getState().openDocument(path, tree);
 	} catch (error) {

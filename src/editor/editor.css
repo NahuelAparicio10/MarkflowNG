@@ -93,3 +93,121 @@
 	overflow: auto;
 	white-space: pre-wrap;
 }
+
+/* Tables. The column-resize handle and cell selection classes are the ones
+   prosemirror-tables sets; widths it writes are view state only. */
+.markflow-editor .tableWrapper {
+	margin-block: var(--markflow-paragraph-spacing, 1em);
+	overflow-x: auto;
+}
+
+.markflow-editor .tableWrapper table {
+	margin-block: 0;
+	table-layout: fixed;
+}
+
+.markflow-editor td,
+.markflow-editor th {
+	position: relative;
+}
+
+.markflow-editor .selectedCell::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: Highlight;
+	opacity: 0.2;
+	pointer-events: none;
+}
+
+.markflow-editor .column-resize-handle {
+	position: absolute;
+	top: 0;
+	right: -2px;
+	bottom: 0;
+	width: 4px;
+	background: Highlight;
+	pointer-events: none;
+}
+
+.markflow-editor.resize-cursor {
+	cursor: col-resize;
+}
+
+/* Images, drawn by ImageView. The handle only shows on a selected image. */
+.markflow-editor .markflow-image {
+	position: relative;
+	display: inline-block;
+	max-width: 100%;
+	line-height: 0;
+}
+
+.markflow-editor .markflow-image img {
+	max-width: 100%;
+}
+
+.markflow-editor .markflow-image.is-selected img {
+	outline: 2px solid Highlight;
+	outline-offset: 1px;
+}
+
+.markflow-editor .markflow-image .markflow-image-missing,
+.markflow-editor .markflow-image.is-missing img {
+	display: none;
+}
+
+.markflow-editor .markflow-image.is-missing .markflow-image-missing {
+	display: inline-block;
+	line-height: var(--markflow-line-height);
+}
+
+.markflow-editor .markflow-image-resize {
+	display: none;
+	position: absolute;
+	right: -5px;
+	bottom: -5px;
+	width: 10px;
+	height: 10px;
+	border: 1px solid Canvas;
+	border-radius: 2px;
+	background: Highlight;
+	cursor: nwse-resize;
+	touch-action: none;
+}
+
+.markflow-editor .markflow-image.is-selected:not(.is-missing) .markflow-image-resize {
+	display: block;
+}
+
+.markflow-editor-toolbar {
+	position: sticky;
+	top: 0;
+	z-index: 5;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.3rem 0.75rem;
+	align-items: center;
+	padding: 0.35rem 1rem;
+	border-bottom: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+	background: Canvas;
+	font-size: 0.8rem;
+}
+
+.markflow-editor-toolbar [role="group"] {
+	display: flex;
+	gap: 0.25rem;
+	align-items: center;
+}
+
+.markflow-editor-toolbar button[aria-pressed="true"] {
+	font-weight: 600;
+	text-decoration: underline;
+}
+
+.markflow-editor-toolbar input {
+	padding: 0.1rem 0.4rem;
+	border: 1px solid currentColor;
+	border-radius: 4px;
+	background: transparent;
+	color: inherit;
+}

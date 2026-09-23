@@ -1,8 +1,11 @@
 import {
 	exists as tauriExists,
+	mkdir as tauriMkdir,
+	readFile as tauriReadFile,
 	readTextFile as tauriReadTextFile,
 	remove as tauriRemove,
 	rename as tauriRename,
+	writeFile as tauriWriteFile,
 	writeTextFile as tauriWriteTextFile,
 } from "@tauri-apps/plugin-fs";
 
@@ -17,7 +20,7 @@ import {
  * and `tauri:dev` never install it, so this module talks to the real
  * plugin there.
  */
-let devFiles: Map<string, string> | null = null;
+let devFiles: Map<string, string | Uint8Array> | null = null;
 
 /** Dev/e2e only. Installs or resets the in-memory filesystem. */
 export function installEditorFsHatch(initial: Record<string, string>): void {
@@ -28,9 +31,15 @@ export function installEditorFsHatch(initial: Record<string, string>): void {
 	devFiles = new Map(Object.entries(initial));
 }
 
-/** Dev/e2e only. Reads back what the hatch currently holds for `path`. */
+/** Dev/e2e only. Reads back the text the hatch currently holds for `path`. */
 export function readEditorFsHatch(path: string): string | undefined {
-	return devFiles?.get(path);
+	const content = devFiles?.get(path);
+	return typeof content === "string" ? content : undefined;
+}
+
+/** Dev/e2e only. Whether the hatch holds any file, text or binary, at `path`. */
+export function hasEditorFsHatchFile(path: string): boolean {
+	return devFiles?.has(path) ?? false;
 }
 
 export async function readTextFile(path: string): Promise<string> {
@@ -39,10 +48,23 @@ export async function readTextFile(path: string): Promise<string> {
 		if (content === undefined) {
 			throw new Error(`No such file in the dev filesystem hatch: ${path}`);
 		}
-		return content;
+		return typeof content === "string" ? content : new TextDecoder().decode(content);
 	}
 
 	return tauriReadTextFile(path);
+}
+
+/** Reads a binary file, such as an image a document references. */
+export async function readFile(path: string): Promise<Uint8Array> {
+	if (devFiles) {
+		const content = devFiles.get(path);
+		if (content === undefined) {
+			throw new Error(`No such file in the dev filesystem hatch: ${path}`);
+		}
+		return typeof content === "string" ? new TextEncoder().encode(content) : content;
+	}
+
+	return tauriReadFile(path);
 }
 
 export async function exists(path: string): Promise<boolean> {
@@ -60,6 +82,27 @@ export async function writeTextFile(path: string, data: string): Promise<void> {
 	}
 
 	return tauriWriteTextFile(path, data);
+}
+
+export async function writeFile(path: string, data: Uint8Array): Promise<void> {
+	if (devFiles) {
+		devFiles.set(path, data);
+		return;
+	}
+
+	return tauriWriteFile(path, data);
+}
+
+/**
+ * Creates a directory and any missing parents. The in-memory hatch has no
+ * directories, only paths, so there it does nothing.
+ */
+export async function mkdir(path: string): Promise<void> {
+	if (devFiles) {
+		return;
+	}
+
+	return tauriMkdir(path, { recursive: true });
 }
 
 export async function rename(oldPath: string, newPath: string): Promise<void> {

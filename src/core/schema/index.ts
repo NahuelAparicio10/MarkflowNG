@@ -12,5 +12,5 @@ import { nodes } from "./nodes";
 export const schema = new Schema({ nodes, marks });
 
 export { marks } from "./marks";
-export { HEADING_LEVELS, nodes } from "./nodes";
-export type { HeadingLevel } from "./nodes";
+export { HEADING_LEVELS, nodes, TABLE_ALIGNMENTS } from "./nodes";
+export type { HeadingLevel, TableAlignment } from "./nodes";

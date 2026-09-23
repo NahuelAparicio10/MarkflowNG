@@ -1,6 +1,8 @@
 import { Extension } from "@tiptap/core";
+import { chainCommands } from "@tiptap/pm/commands";
 import type { Command } from "@tiptap/pm/state";
 import { enterInList, indentListItem, outdentListItem, toggleMarkCommand } from "./commands";
+import { enterInTable, moveToCell } from "./tables";
 
 /**
  * The single declaration point for keyboard shortcuts — see the "Shortcuts
@@ -32,6 +34,11 @@ export const SHORTCUTS = {
 	strikethrough: "Mod-Shift-x",
 	inlineCode: "Mod-Shift-e",
 	link: "Mod-k",
+	/**
+	 * Enter, Tab and Shift-Tab each serve lists and tables. A table cell cannot
+	 * hold a list, so the two never compete for the same caret: the table
+	 * command runs first and declines outside a table.
+	 */
 	listEnter: "Enter",
 	listIndent: "Tab",
 	listOutdent: "Shift-Tab",
@@ -93,9 +100,9 @@ export function createShortcutsExtension(onOpenLink: () => void) {
 					onOpenLink();
 					return true;
 				},
-				[SHORTCUTS.listEnter]: run(enterInList),
-				[SHORTCUTS.listIndent]: run(indentListItem),
-				[SHORTCUTS.listOutdent]: run(outdentListItem),
+				[SHORTCUTS.listEnter]: run(chainCommands(enterInTable, enterInList)),
+				[SHORTCUTS.listIndent]: run(chainCommands(moveToCell(1), indentListItem)),
+				[SHORTCUTS.listOutdent]: run(chainCommands(moveToCell(-1), outdentListItem)),
 			};
 		},
 	});
