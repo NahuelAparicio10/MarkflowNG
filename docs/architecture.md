@@ -49,6 +49,51 @@ vista previa del explorador y la capa de IA.
 | `src/store` | Zustand | — |
 | `src-tauri/src` | fs, watcher, indexado, comandos | — |
 
+## IA e indexado: estado implementado
+
+- Los comandos sobre selección generan Markdown y lo vuelven a introducir por el
+  parser y el mapping del core. La propuesta se revisa antes de aplicar una única
+  transacción de ProseMirror.
+- No hay proveedor activo por defecto. La preferencia de proveedor y modelo es
+  única por dispositivo, por lo que los comandos sobre una selección funcionan
+  también con un documento suelto. RAG continúa ligado a un workspace. La
+  configuración remota requiere
+  consentimiento explícito; las credenciales viven en el almacén del sistema
+  operativo. Las preferencias de proveedor no contienen secretos.
+- El proveedor local de generación se conecta a un servidor llama.cpp en una
+  dirección IP loopback literal. El runtime/modelo generativo lo instala y ejecuta
+  el usuario; Markflow no lo empaqueta.
+- FastEmbed calcula embeddings localmente. El modelo all-MiniLM-L6-v2 (~91 MB) se
+  descarga explícitamente; SQLite y los metadatos del índice viven en el directorio
+  de datos de la aplicación, no en el workspace. Un worker Rust de baja prioridad
+  procesa la cola incremental del watcher.
+- Las respuestas de RAG citan archivo y ruta de headings; las citas abren el
+  documento y reportan secciones obsoletas. El estado conversacional es periférico
+  y no se serializa en Markdown.
+- La migración desde configuraciones antiguas copia credenciales entre identidades
+  del almacén del sistema exclusivamente en Rust. El destino está fijado al scope
+  del dispositivo; la UI no recibe ni persiste el secreto.
+
+## Apertura desde el sistema operativo
+
+El instalador de Windows registra `.md`. La ruta recibida al arrancar se valida
+como fichero existente y el backend añade **solo ese fichero** al scope del plugin
+`fs` antes de entregarla al frontend. El acceso posterior a imágenes hermanas se
+amplía por separado mediante `allow_document_directory`; no existe un comando que
+permita al frontend autorizar una ruta inicial arbitraria.
+
+## Presentación y edición
+
+Dark es el tema inicial; Light y Sepia se guardan como preferencia local. La barra
+superior concentra apertura, modos, IA y apariencia con iconos accesibles. La
+navegación del documento vive a la izquierda y se colapsa desde su borde. La barra
+del editor expone el esquema Markdown (incluidos H1–H6, listas, código y tablas),
+manteniendo ProseMirror como única fuente del documento. Los avisos usan
+`> [!WARNING]`, no HTML de color, y conservan esa sintaxis al serializar.
+
+El evaluador local actual y sus mediciones están registrados en
+`openspec/changes/archive/2026-09-24-ai-assistance/evaluation.md`.
+
 ## Forma normal del serializador
 
 Fijada en `src/core/markdown/options.ts` y vinculante para todo el proyecto:
@@ -115,3 +160,5 @@ pérdida estructural conocida del mapeo y no aparece en el corpus.
 El core de Markdown vive en TypeScript. Se migra a Rust **solo si se mide** que
 el parseo o la serialización de un documento típico supera los 16 ms (un frame a
 60 fps), o si el indexado del workspace bloquea el hilo de UI. Medir antes de mover.
+La primera línea base y sus limitaciones están en
+[`docs/performance-baseline.md`](performance-baseline.md).
