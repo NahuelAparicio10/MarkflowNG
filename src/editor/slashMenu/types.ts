@@ -9,6 +9,14 @@ import type { ImageAttrs } from "../images";
 export interface SlashCommandHost {
 	/** Asks the user for images to insert; resolves to none when they cancel. */
 	chooseImages(): Promise<ImageAttrs[]>;
+	/** Shows a complete suggestion without editing the document; resolves on accept/reject. */
+	reviewAiSuggestion?(suggestion: AiSuggestion): Promise<boolean>;
+}
+
+export interface AiSuggestion {
+	original: string;
+	replacement: string;
+	error?: string;
 }
 
 export interface SlashCommandContext {
@@ -32,6 +40,8 @@ export interface SlashCommandContext {
  * never in the menu component, so other modules can contribute entries.
  */
 export interface SlashCommand {
+	/** Opt in only when the command can safely operate on a non-empty selection. */
+	supportsSelection?: boolean;
 	/** Unique across the registry; registering the same id again replaces the entry. */
 	id: string;
 	label: string;

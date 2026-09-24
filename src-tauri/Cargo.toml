@@ -25,4 +25,10 @@ serde_json = "1"
 tauri-plugin-fs = { version = "2.5.1", features = ["watch"] }
 tauri-plugin-dialog = "2.7.2"
 notify = "8"
-
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+keyring = { version = "3.6.3", features = ["windows-native", "apple-native", "sync-secret-service", "crypto-rust"] }
+fastembed = { version = "7.1.0", default-features = false, features = ["ort-download-binaries-rustls-tls"] }
+rusqlite = { version = "0.38", features = ["bundled"] }
+markdown = "1.0"
+sha2 = "0.10"
+thread-priority = "3.1"

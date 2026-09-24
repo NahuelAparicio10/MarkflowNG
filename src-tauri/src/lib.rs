@@ -1,4 +1,6 @@
+mod ai;
 mod document_scope;
+mod index;
 mod watcher;
 mod workspace;
 
@@ -53,6 +55,8 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .manage(workspace::WorkspaceState::default())
+        .manage(ai::AiState::default())
+        .manage(index::IndexState::default())
         .setup(|app| {
             use tauri::Emitter;
             app.emit("startup-file", resolve_startup_file())?;
@@ -60,6 +64,13 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             greet,
+            ai::configure_ai,
+            ai::generate_ai,
+            index::start_index,
+            index::stop_index,
+            index::pause_index,
+            index::install_embedding_model,
+            index::retrieve_workspace,
             document_scope::allow_document_directory,
             workspace::scan_workspace,
             watcher::start_watching,

@@ -130,6 +130,37 @@ describe("command registry", () => {
 });
 
 describe("trigger", () => {
+	it("opens over a selection and filters without editing, including no-match recovery", () => {
+		const registry = createSlashCommandRegistry();
+		registry.register({ id: "rewrite", label: "Rewrite", keywords: [], group: "AI", supportsSelection: true,
+			isAvailable: (state) => !state.selection.empty, run: async () => undefined });
+		const plugin = createSlashMenuPlugin(registry, noImages);
+		const view = createTestView(docFrom("Selected text"), [plugin]);
+		view.dispatch(view.state.tr.setSelection(TextSelection.create(view.state.doc, 1, 9)));
+		const before = markdownOf(view);
+		const selection = view.state.selection;
+		const event = { code: "Space", ctrlKey: true, shiftKey: true } as KeyboardEvent;
+		expect(plugin.props.handleKeyDown?.call(plugin, asView(view), event)).toBe(true);
+		typeText(view, "rewriteX", plugin);
+		expect(slashMenuKey.getState(view.state)?.items).toHaveLength(0);
+		pressKey(view, "Backspace", plugin);
+		expect(slashMenuKey.getState(view.state)?.items[0].id).toBe("rewrite");
+		expect(view.state.selection.eq(selection)).toBe(true);
+		expect(markdownOf(view)).toBe(before);
+		pressKey(view, "Escape", plugin);
+		expect(slashMenuKey.getState(view.state)?.active).toBe(false);
+		expect(markdownOf(view)).toBe(before);
+	});
+
+	it("dismisses selection invocation when the selected range changes", () => {
+		const plugin = createSlashMenuPlugin(createSlashCommandRegistry(), noImages);
+		const view = createTestView(docFrom("Selected text"), [plugin]);
+		view.dispatch(view.state.tr.setSelection(TextSelection.create(view.state.doc, 1, 9)));
+		plugin.props.handleKeyDown?.call(plugin, asView(view), { code: "Space", metaKey: true, shiftKey: true } as KeyboardEvent);
+		view.dispatch(view.state.tr.setSelection(TextSelection.create(view.state.doc, 2, 9)));
+		expect(slashMenuKey.getState(view.state)?.active).toBe(false);
+	});
+
 	it("opens on a slash typed in an empty paragraph", () => {
 		const { menu, type } = setup();
 		type("/");

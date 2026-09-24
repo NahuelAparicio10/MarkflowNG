@@ -6,6 +6,8 @@ import type { SlashCommand, SlashCommandContext, SlashCommandHost } from "./type
 
 export interface SlashMenuState {
 	active: boolean;
+	/** Selection invocation keeps its filter outside the document. */
+	mode: "slash" | "selection";
 	/** Document position of the slash that opened the menu. */
 	from: number;
 	/** What was typed after the slash. */
@@ -24,6 +26,8 @@ export interface SlashMenuState {
 
 type SlashMenuAction =
 	| { type: "open"; from: number }
+	| { type: "open-selection" }
+	| { type: "filter"; query: string }
 	| { type: "close" }
 	| { type: "select"; index: number }
 	| { type: "pending" }
@@ -32,7 +36,7 @@ type SlashMenuAction =
 export const slashMenuKey = new PluginKey<SlashMenuState>("markflowSlashMenu");
 
 function closedState(session: number, justInserted: boolean): SlashMenuState {
-	return { active: false, from: 0, query: "", items: [], selected: 0, pending: false, session, justInserted };
+	return { active: false, mode: "slash", from: 0, query: "", items: [], selected: 0, pending: false, session, justInserted };
 }
 
 /**
@@ -86,6 +90,13 @@ function readQuery(state: EditorState, from: number): string | null {
  * the document with the trigger text already gone.
  */
 function buildReplacement(state: EditorState, menu: SlashMenuState, command: Command): Transaction | null {
+	if (menu.mode === "selection") {
+		let result: Transaction | null = null;
+		const applies = command(state, (tr) => { result = tr; });
+		if (!applies || !result) return null;
+		closeHistory(result);
+		return (result as Transaction).setMeta(slashMenuKey, { type: "inserted" } satisfies SlashMenuAction);
+	}
 	const tr = state.tr.delete(menu.from, menu.from + 1 + menu.query.length);
 	const scratch = EditorState.create({ schema: state.schema, doc: tr.doc, selection: tr.selection });
 
@@ -194,9 +205,25 @@ export function createSlashMenuPlugin(registry: SlashCommandRegistry, host: Slas
 		state: {
 			init: () => closedState(0, false),
 
-			apply(tr, previous, _oldState, state) {
+			apply(tr, previous, oldState, state) {
 				const action = tr.getMeta(slashMenuKey) as SlashMenuAction | undefined;
 				const justInserted = action?.type === "inserted" || (!tr.docChanged && previous.justInserted);
+				if (action?.type === "open-selection" || (previous.active && previous.mode === "selection")) {
+					const opening = action?.type === "open-selection";
+					const session = previous.session + (opening ? 1 : 0);
+					if (state.selection.empty || tr.docChanged || action?.type === "close" || action?.type === "inserted"
+						|| (!opening && !state.selection.eq(oldState.selection))) {
+						return closedState(session, justInserted);
+					}
+					const query = opening ? "" : action?.type === "filter" ? action.query : previous.query;
+					const items = findSlashCommands(registry, state, query).filter((item) => item.supportsSelection);
+					const selected = action?.type === "select" ? action.index : query === previous.query ? previous.selected : 0;
+					return {
+						active: true, mode: "selection", from: state.selection.from, query, items,
+						selected: Math.max(0, Math.min(selected, items.length - 1)),
+						pending: action?.type === "pending" || (!opening && previous.pending), session, justInserted,
+					};
+				}
 
 				let from: number;
 				let session = previous.session;
@@ -225,6 +252,7 @@ export function createSlashMenuPlugin(registry: SlashCommandRegistry, host: Slas
 
 				return {
 					active: true,
+					mode: "slash",
 					from,
 					query,
 					items,
@@ -253,7 +281,11 @@ export function createSlashMenuPlugin(registry: SlashCommandRegistry, host: Slas
 				if (menu?.active) {
 					// Nothing is typed while a command runs, so its trigger text stays put.
 					if (!menu.pending) {
-						view.dispatch(view.state.tr.insertText(text, from, to));
+						if (menu.mode === "selection") {
+							dispatchAction(view, { type: "filter", query: menu.query + text });
+						} else {
+							view.dispatch(view.state.tr.insertText(text, from, to));
+						}
 					}
 					return true;
 				}
@@ -268,6 +300,11 @@ export function createSlashMenuPlugin(registry: SlashCommandRegistry, host: Slas
 
 			handleKeyDown(view, event) {
 				const menu = slashMenuKey.getState(view.state);
+				if (!view.composing && (event.ctrlKey || event.metaKey) && event.shiftKey && !event.altKey
+					&& event.code === "Space" && !view.state.selection.empty) {
+					if (!menu?.pending) dispatchAction(view, { type: "open-selection" });
+					return true;
+				}
 				if (!menu?.active || event.ctrlKey || event.metaKey || event.altKey) {
 					return false;
 				}
@@ -282,6 +319,11 @@ export function createSlashMenuPlugin(registry: SlashCommandRegistry, host: Slas
 				}
 
 				const count = menu.items.length;
+				if (menu.mode === "selection" && event.key === "Backspace") {
+					dispatchAction(view, { type: "filter", query: Array.from(menu.query).slice(0, -1).join("") });
+					return true;
+				}
+				if (count === 0 && ["ArrowDown", "ArrowUp", "Enter", "Tab"].includes(event.key)) return true;
 				switch (event.key) {
 					case "ArrowDown":
 						dispatchAction(view, { type: "select", index: (menu.selected + 1) % count });

@@ -1,5 +1,8 @@
 import { EditorContent, useEditor } from "@tiptap/react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import AiReview from "../ai/Review";
+import { createReviewController } from "../ai/reviewController";
+import type { AiSuggestion } from "./slashMenu/types";
 import { selectDocument, useSessionStore } from "../store/session";
 import { useSettingsStore } from "../store/settings";
 import { useWorkspaceStore } from "../store/workspace";
@@ -57,6 +60,13 @@ export default function EditorView({ filePath, isActive, isVisible, revision }: 
 	const baselineRef = useRef<string>("");
 
 	const [linkEditorOpen, setLinkEditorOpen] = useState(false);
+	const [aiSuggestion, setAiSuggestion] = useState<AiSuggestion | null>(null);
+	const [reviewController] = useState(() => createReviewController(setAiSuggestion));
+
+	useEffect(() => () => reviewController.setVisible(false), [reviewController]);
+	useEffect(() => {
+		reviewController.setVisible(isVisible);
+	}, [isVisible, reviewController]);
 
 	// Images resolve against, and are written beside, this document. The
 	// workspace root is read at insertion time, since a workspace can be
@@ -75,6 +85,7 @@ export default function EditorView({ filePath, isActive, isVisible, revision }: 
 			isInputRulesEnabled: () => useSettingsStore.getState().inputRulesEnabled,
 			onOpenLink: () => setLinkEditorOpen(true),
 			images: imageContext,
+			reviewAiSuggestion: reviewController.request,
 		}),
 	);
 
@@ -236,6 +247,7 @@ export default function EditorView({ filePath, isActive, isVisible, revision }: 
 			{editor ? <EditorToolbar editor={editor} images={imageContext} /> : null}
 			<EditorContent editor={editor} />
 			{editor ? <SlashMenu editor={editor} /> : null}
+			{aiSuggestion && isVisible ? <AiReview suggestion={aiSuggestion} onResolve={reviewController.resolve} /> : null}
 			{linkEditorOpen && editor ? <LinkEditor editor={editor} onClose={() => setLinkEditorOpen(false)} /> : null}
 		</div>
 	);

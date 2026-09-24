@@ -1,4 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
+import ProviderSettings from "./ai/ProviderSettings";
+import AiPanel from "./ai/Panel";
+import { startIndex } from "./ai/workspace";
+import { useAiSettings } from "./ai/provider/settings";
 import EditorView from "./editor/EditorView";
 import FileTree from "./explorer/FileTree";
 import { openFolderDialog } from "./explorer/openWorkspace";
@@ -28,6 +32,13 @@ export default function App() {
 	const previewPath = useWorkspaceStore((state) => state.previewPath);
 	const [outlineOpen, setOutlineOpen] = useState(false);
 	const [quickOpenShown, setQuickOpenShown] = useState(false);
+	const [aiSettingsOpen, setAiSettingsOpen] = useState(false);
+	const [aiPanelOpen, setAiPanelOpen] = useState(false);
+	const aiProvider = useAiSettings((state) => workspaceRoot ? state.providers.get(workspaceRoot) : undefined);
+	useEffect(() => { void useAiSettings.getState().restore(); }, []);
+	useEffect(() => {
+		if (workspaceRoot && aiProvider) return startIndex(workspaceRoot);
+	}, [workspaceRoot, aiProvider]);
 
 	const fileName = active ? active.name : null;
 	const tree = active ? active.tree : null;
@@ -78,6 +89,9 @@ export default function App() {
 						</button>
 					) : null}
 					{mode === "editor" && active ? <InputRulesToggle /> : null}
+					<button type="button" disabled={!workspaceRoot} onClick={() => setAiSettingsOpen((open) => !open)}>AI settings</button>
+					<button type="button" disabled={!workspaceRoot} onClick={() => setAiPanelOpen((open) => !open)}>AI assistant</button>
+					{aiProvider?.kind === "remote" ? <span role="status">Remote AI active</span> : null}
 				</div>
 				<span className="truncate text-sm opacity-70">
 					{dirty ? "● " : ""}
@@ -86,6 +100,7 @@ export default function App() {
 			</header>
 
 			<TabStrip />
+			{aiSettingsOpen && workspaceRoot ? <ProviderSettings key={workspaceRoot} workspace={workspaceRoot} onClose={() => setAiSettingsOpen(false)} /> : null}
 
 			{error ? <p className="border-b border-black/10 px-4 py-2 text-sm text-red-600 dark:border-white/10">{error}</p> : null}
 
@@ -151,6 +166,7 @@ export default function App() {
 						mode === "raw" ? <RawView tree={tree} /> : <ReaderView />
 					) : null}
 				</div>
+				{aiPanelOpen && workspaceRoot ? <AiPanel key={workspaceRoot} root={workspaceRoot} onSettings={() => setAiSettingsOpen(true)} /> : null}
 			</main>
 
 			{quickOpenShown ? (

@@ -10,6 +10,7 @@ import { ImageView } from "./imageView";
 import { createInputRulesExtension } from "./inputRules";
 import { createShortcutsExtension } from "./shortcuts";
 import { createSlashMenuExtension } from "./slashMenu";
+import type { SlashCommandHost } from "./slashMenu/types";
 import { createTableAlignmentPlugin, createTableNormalizePlugin } from "./tables";
 
 /**
@@ -185,7 +186,7 @@ export function createExtensions(options: EditorBehaviorOptions) {
 		...Object.entries(nodes).map(([name, spec]) => createNodeExtension(name, spec as NodeSpec, nodeViews[name])),
 		...Object.entries(marks).map(([name, spec]) => createMarkExtension(name, spec)),
 		createInputRulesExtension(options.isInputRulesEnabled),
-		createSlashMenuExtension({ chooseImages: () => chooseImageFiles(options.images) }),
+		createSlashMenuExtension({ chooseImages: () => chooseImageFiles(options.images), reviewAiSuggestion: options.reviewAiSuggestion }),
 		createShortcutsExtension(options.onOpenLink),
 		createEditingBehaviorExtension(),
 		tables,
@@ -194,6 +195,7 @@ export function createExtensions(options: EditorBehaviorOptions) {
 }
 
 export interface EditorBehaviorOptions {
+	reviewAiSuggestion?: SlashCommandHost["reviewAiSuggestion"];
 	/** Read on every keystroke, so toggling the setting applies immediately. */
 	isInputRulesEnabled(): boolean;
 	/** Invoked by the link shortcut. The affordance itself lives in `src/ui/`. */

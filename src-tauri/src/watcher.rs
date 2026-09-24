@@ -17,7 +17,7 @@ use std::time::{Duration, Instant};
 use notify::event::{ModifyKind, RenameMode};
 use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use tauri::ipc::Channel;
-use tauri::{AppHandle, State};
+use tauri::{AppHandle, Manager, State};
 
 use crate::workspace::{
     self, describe_entry, is_ignored, relative_path, EntryKind, WorkspaceEntry, WorkspaceState,
@@ -324,7 +324,10 @@ pub fn start_watching(
     let root = PathBuf::from(root);
     workspace::ensure_root_allowed(&app, &root)?;
 
+    let index_root = root.to_string_lossy().into_owned();
     let watcher = WorkspaceWatcher::start(root, DEBOUNCE_WINDOW, MAX_BATCH_LATENCY, move |batch| {
+        app.state::<crate::index::IndexState>()
+            .changed(&index_root, batch.changes.clone());
         let _ = on_batch.send(batch);
     })
     .map_err(|error| error.to_string())?;

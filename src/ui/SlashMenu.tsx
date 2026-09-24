@@ -65,12 +65,14 @@ export default function SlashMenu({ editor }: SlashMenuProps) {
 			ref={listRef}
 			className="markflow-slash-menu"
 			role="listbox"
-			aria-label="Insert block"
+			aria-label={menu.mode === "selection" ? "Selection commands" : "Insert block"}
 			aria-busy={menu.pending}
 			// Hidden until measured and placed, so no frame is drawn out of place.
 			style={{ visibility: "hidden" }}
 			onMouseDown={(event) => event.preventDefault()}
 		>
+			{menu.mode === "selection" ? <div role="presentation">Filter: {query || "Type to search…"}</div> : null}
+			{menu.items.length === 0 ? <div role="presentation">No matching commands</div> : null}
 			{menu.items.map((item, index) => {
 				const startsGroup = showGroups && (index === 0 || menu.items[index - 1].group !== item.group);
 				const selected = index === menu.selected;
