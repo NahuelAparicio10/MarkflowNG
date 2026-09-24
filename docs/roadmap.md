@@ -14,7 +14,8 @@ OpenSpec. Cada *change* se implementa con `/opsx:apply` y se archiva al terminar
 | 5 — Tablas e imágenes | `tables-and-images` | Hecho | fases 3, 4 |
 | 6 — Slash commands | `slash-commands` | Hecho | fases 3, 5 |
 | 7 — IA | `ai-assistance` | Hecho | fases 4, 5, 6 |
-| Validación MVP y usabilidad | `usability-themes-and-mvp-validation` | En verificación final | fases 1–7 |
+| Validación MVP y usabilidad | `usability-themes-and-mvp-validation` | Hecho | fases 1–7 |
+| Preparación para uso real | `mvp-real-world-readiness` | Implementación validada; faltan comprobaciones manuales | validación MVP |
 
 Los ocho changes de las fases 1–7 están archivados en `openspec/changes/archive/`;
 las capacidades de IA también están sincronizadas en `openspec/specs/`. Las
@@ -25,9 +26,11 @@ de producto en una instalación empaquetada y una excepción de MVP anotada abaj
 ## Verificación de alcance del MVP
 
 - **Asociación de `.md` con la aplicación:** el instalador NSIS registra la
-  asociación y la ruta de arranque obtiene acceso al scope `fs`. Windows conserva
-  la elección `UserChoice` existente; el usuario debe elegir Markflow como app
-  predeterminada o usar “Abrir con” para que Explorer la aplique.
+  asociación. Tanto el primer proceso como una activación enviada a una instancia
+  ya abierta validan y canonicalizan un `.md`, autorizan solo ese fichero y lo
+  abren por el cargador normal. Windows conserva la elección `UserChoice`
+  existente; Markflow la detecta y explica que el usuario debe elegir Markflow en
+  “Abrir con” o Aplicaciones predeterminadas, sin modificarla por su cuenta.
 - **Apertura y lectura rápidas:** la línea base reproducible está en
   [`performance-baseline.md`](performance-baseline.md). El workspace se entrega en
   lotes, pero el fixture extremo bloquea ~63 ms y el documento de 829 KB tarda
@@ -40,10 +43,25 @@ de producto en una instalación empaquetada y una excepción de MVP anotada abaj
   ajustes de IA cuando el usuario lo solicita; no está incluido en el instalador.
 - **MCP, nube, colaboración, exportación y multi-ventana:** siguen fuera del MVP,
   como especifica `Context/EXPLORE.md`.
+- **IA sin comprar una API key:** la integración Beta con OpenCode V2 descubre
+  los modelos de las cuentas ya conectadas mediante `/connect` y los modelos
+  locales. La generación usa un agente aislado sin herramientas y entrada por
+  `stdin`; Markflow no lee el almacén de cuentas ni recibe contraseñas o tokens.
+  La conexión directa por API sigue siendo opcional.
 
 `Context/EXPLORE.md` conserva sus casillas sin marcar porque es el documento de
 exploración original, no el registro del estado de implementación. Esta hoja de
 ruta y los changes archivados reflejan el estado actual.
+
+### Smoke test de IA Beta
+
+Sin comprar una API key: conectar una cuenta soportada con `/connect` en OpenCode,
+abrir **Ajustes de IA → Detectar OpenCode**, elegir un modelo con coste de catálogo
+cero cuando exista y ejecutar **Probar conexión**. La prueba usa texto sintético.
+Después se valida una acción sobre selección con aceptar y rechazar, y una pregunta
+RAG en un workspace ya indexado. El documento debe permanecer idéntico al rechazar
+o ante cualquier error/cancelación. Una clase de proveedor no se considera lista
+si no supera este recorrido; la UI mantiene la etiqueta Beta.
 
 ## Fase 0 — qué quedó hecho
 

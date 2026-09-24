@@ -63,6 +63,13 @@ vista previa del explorador y la capa de IA.
 - El proveedor local de generación se conecta a un servidor llama.cpp en una
   dirección IP loopback literal. El runtime/modelo generativo lo instala y ejecuta
   el usuario; Markflow no lo empaqueta.
+- El proveedor OpenCode V2 es un puente Beta y opcional. Descubre el catálogo a
+  través del CLI oficial y genera en un workspace temporal vacío mediante un
+  agente `markflow` que deniega todas las herramientas y permisos. El prompt se
+  entrega por `stdin`, nunca como argumento del proceso; la sesión temporal se
+  elimina después de obtener el texto. OpenCode conserva en exclusiva sus cuentas
+  OAuth/API: Markflow no lee su base de credenciales, cookies ni tokens. El puente
+  expone al webview solo estado/modelos, prueba sintética, generación y cancelación.
 - FastEmbed calcula embeddings localmente. El modelo all-MiniLM-L6-v2 (~91 MB) se
   descarga explícitamente; SQLite y los metadatos del índice viven en el directorio
   de datos de la aplicación, no en el workspace. Un worker Rust de baja prioridad
@@ -76,11 +83,24 @@ vista previa del explorador y la capa de IA.
 
 ## Apertura desde el sistema operativo
 
-El instalador de Windows registra `.md`. La ruta recibida al arrancar se valida
-como fichero existente y el backend añade **solo ese fichero** al scope del plugin
-`fs` antes de entregarla al frontend. El acceso posterior a imágenes hermanas se
-amplía por separado mediante `allow_document_directory`; no existe un comando que
-permita al frontend autorizar una ruta inicial arbitraria.
+El instalador de Windows registra `.md`. La ruta recibida al arrancar o desde una
+segunda invocación se canonicaliza y valida como fichero `.md` existente; el
+backend añade **solo ese fichero** al scope del plugin `fs` antes de entregarla al
+frontend. Los eventos se encolan hasta que el listener está listo y la instancia
+existente recupera el foco. El acceso posterior a imágenes hermanas se amplía por
+separado mediante `allow_document_directory`; no existe un comando que permita al
+frontend autorizar una ruta inicial arbitraria. `UserChoice` se consulta solo para
+informar y nunca se reescribe.
+
+## Arranque
+
+El backend y el webview publican marcadores monotónicos locales: backend listo,
+render React, primer paint, autorización del fichero, parseo y documento visible.
+Solo se escriben a un JSONL si el proceso de validación define
+`MARKFLOW_STARTUP_METRICS_FILE`; no se transmiten. La restauración de IA ocurre
+después del primer render y Tiptap no se monta para documentos que solo se leen;
+una vez que un documento entra en edición, su editor permanece montado para
+conservar caret e historial.
 
 ## Presentación y edición
 
