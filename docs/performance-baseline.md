@@ -54,7 +54,7 @@ SHA-256 del documento al finalizar.
 |---|---:|
 | Primera apertura vacía tras build (proceso → primer paint) | ~1.710 ms |
 | Apertura vacía caliente, 2 repeticiones | ~638–654 ms |
-| `.md` asociado caliente, proceso → documento visible, 3 repeticiones | ~652–682 ms |
+| `.md` asociado caliente, proceso → documento visible, 5 repeticiones | ~652–754 ms |
 
 El fixture asociado contenía espacios y `ñ`; las tres ejecuciones llegaron a
 `startup-document-visible` y conservaron el SHA-256 byte por byte. Una segunda

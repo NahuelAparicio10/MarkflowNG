@@ -42,6 +42,8 @@ export interface OpenDocument {
 	 */
 	revision: number;
 	conflict: ExternalConflict | null;
+	/** Becomes true on first edit and keeps the editor mounted until the tab closes. */
+	editorMounted?: boolean;
 }
 
 /**
@@ -104,6 +106,7 @@ export const useSessionStore = create<SessionState>()((set, get) => ({
 			dirty: false,
 			revision: 0,
 			conflict: null,
+			editorMounted: false,
 		};
 
 		set((state) => ({
@@ -122,7 +125,10 @@ export const useSessionStore = create<SessionState>()((set, get) => ({
 	setMode(mode) {
 		const activePath = get().activePath;
 		if (activePath !== null) {
-			updateDocument(set, activePath, () => ({ mode }));
+			updateDocument(set, activePath, (document) => ({
+				mode,
+				editorMounted: document.editorMounted || mode === "editor",
+			}));
 		}
 	},
 

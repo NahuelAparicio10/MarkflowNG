@@ -4,6 +4,7 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import { createRemoteProvider } from "./remote";
 import { createLocalProvider } from "./local";
 import type { AiProvider } from "./types";
+import { createOpenCodeProvider } from "./opencode";
 
 export const DEVICE_PROVIDER_SCOPE = "__markflow_device__";
 
@@ -13,9 +14,18 @@ export interface RemoteConfig {
 	remoteConsent: boolean;
 }
 
-export interface SavedProviderConfig extends RemoteConfig {
+export interface DirectProviderConfig extends RemoteConfig {
 	kind: "remote" | "local";
 }
+
+export interface OpenCodeProviderConfig {
+	kind: "opencode";
+	model: string;
+	local: boolean;
+	remoteConsent: boolean;
+}
+
+export type SavedProviderConfig = DirectProviderConfig | OpenCodeProviderConfig;
 
 interface PersistedAiSettings {
 	deviceConfiguration: SavedProviderConfig | null;
@@ -30,6 +40,7 @@ interface AiSettingsState extends PersistedAiSettings {
 	restore(): Promise<void>;
 	migrateLegacy(workspace: string): Promise<void>;
 	configureRemote(config: RemoteConfig, secret: string): Promise<void>;
+	configureOpenCode(model: string, local: boolean, remoteConsent: boolean): Promise<void>;
 	disable(): Promise<void>;
 	configureLocal(endpoint: string, model: string): Promise<void>;
 }
@@ -52,11 +63,12 @@ export function migratePersistedAiSettings(persisted: unknown): PersistedAiSetti
 	};
 }
 
-function tauriConfig(config: SavedProviderConfig) {
+function tauriConfig(config: DirectProviderConfig) {
 	return { endpoint: config.endpoint, model: config.model, local: config.kind === "local", remoteConsent: config.remoteConsent };
 }
 
 function providerFor(config: SavedProviderConfig): AiProvider {
+	if (config.kind === "opencode") return createOpenCodeProvider(config.model);
 	return config.kind === "local" ? createLocalProvider(DEVICE_PROVIDER_SCOPE) : createRemoteProvider(DEVICE_PROVIDER_SCOPE);
 }
 
@@ -70,7 +82,9 @@ export const useAiSettings = create<AiSettingsState>()(persist((set, get) => ({
 		const state = get();
 		if (state.deviceConfiguration) {
 			try {
-				await invoke("configure_ai", { workspace: DEVICE_PROVIDER_SCOPE, config: tauriConfig(state.deviceConfiguration), secret: null });
+				if (state.deviceConfiguration.kind !== "opencode") {
+					await invoke("configure_ai", { workspace: DEVICE_PROVIDER_SCOPE, config: tauriConfig(state.deviceConfiguration), secret: null });
+				}
 				set((current) => ({ providers: new Map(current.providers).set(DEVICE_PROVIDER_SCOPE, providerFor(state.deviceConfiguration!)) }));
 			} catch {
 				set({ migrationError: "The saved AI provider could not be restored. Review provider settings." });
@@ -90,6 +104,7 @@ export const useAiSettings = create<AiSettingsState>()(persist((set, get) => ({
 	async migrateLegacy(workspace) {
 		const config = get().legacyConfigurations[workspace];
 		if (!config) throw new Error("Legacy provider configuration not found.");
+		if (config.kind === "opencode") throw new Error("Invalid legacy provider configuration.");
 		if (config.kind === "remote") {
 			await invoke("migrate_ai_credential", { fromWorkspace: workspace, toWorkspace: DEVICE_PROVIDER_SCOPE, config: tauriConfig(config) });
 		}
@@ -122,6 +137,16 @@ export const useAiSettings = create<AiSettingsState>()(persist((set, get) => ({
 			providers: new Map(state.providers).set(DEVICE_PROVIDER_SCOPE, providerFor(saved)),
 		}));
 	},
+	async configureOpenCode(model, local, remoteConsent) {
+		if (!local && !remoteConsent) throw new Error("Confirm what will be sent before enabling a remote OpenCode model.");
+		const config: OpenCodeProviderConfig = { kind: "opencode", model, local, remoteConsent: local ? false : remoteConsent };
+		set((state) => ({
+			deviceConfiguration: config,
+			migrationResolved: true,
+			migrationError: null,
+			providers: new Map(state.providers).set(DEVICE_PROVIDER_SCOPE, providerFor(config)),
+		}));
+	},
 	async disable() {
 		await invoke("configure_ai", { workspace: DEVICE_PROVIDER_SCOPE, config: null, secret: null });
 		set((state) => {
@@ -132,7 +157,7 @@ export const useAiSettings = create<AiSettingsState>()(persist((set, get) => ({
 	},
 }), {
 	name: "markflow-ai-provider-settings",
-	version: 1,
+	version: 2,
 	storage: createJSONStorage(() => localStorage),
 	partialize: (state) => ({
 		deviceConfiguration: state.deviceConfiguration,

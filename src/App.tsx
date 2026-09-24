@@ -15,7 +15,7 @@ import OutlinePanel from "./reader/OutlinePanel";
 import ReaderView from "./reader/ReaderView";
 import RawView from "./reader/RawView";
 import { openFileAtPath, openFileDialog } from "./store/openFile";
-import { selectActiveDocument, useSessionStore } from "./store/session";
+import { selectActiveDocument, useSessionStore, type OpenDocument } from "./store/session";
 import { useSettingsStore } from "./store/settings";
 import { useAppearanceStore } from "./store/appearance";
 import { useWorkspaceStore } from "./store/workspace";
@@ -25,6 +25,8 @@ import ThemeSelector from "./ui/ThemeSelector";
 import { useModeShortcut } from "./ui/useModeShortcut";
 import { syncWindowTitle } from "./ui/windowTitle";
 import { BookOpenIcon, CodeIcon, FileIcon, FolderOpenIcon, PanelLeftCloseIcon, PanelLeftOpenIcon, PencilIcon, SettingsIcon, SparklesIcon } from "./ui/icons";
+import { markStartup } from "./startupTiming";
+import { checkMarkdownAssociation } from "./store/fileAssociation";
 
 export default function App() {
 	const documents = useSessionStore((state) => state.documents);
@@ -44,7 +46,23 @@ export default function App() {
 	const legacyProviderConfigurations = useAiSettings((state) => state.legacyConfigurations);
 	const deviceAiConfiguration = useAiSettings((state) => state.deviceConfiguration);
 	const aiMigrationResolved = useAiSettings((state) => state.migrationResolved);
-	useEffect(() => { void useAiSettings.getState().restore(); }, []);
+	useEffect(() => {
+		const timer = window.setTimeout(() => void useAiSettings.getState().restore(), 0);
+		return () => window.clearTimeout(timer);
+	}, []);
+	useEffect(() => {
+		requestAnimationFrame(() => requestAnimationFrame(() => markStartup("first-paint")));
+	}, []);
+	useEffect(() => {
+		const timer = window.setTimeout(() => {
+			void checkMarkdownAssociation().then((status) => {
+				if (status?.supported && !status.isMarkflow && useSessionStore.getState().notice === null) {
+					useSessionStore.getState().setNotice("Windows is using another default app for .md files. Choose Markflow in Open with or Settings › Apps › Default apps to enable double-click opening.");
+				}
+			});
+		}, 1200);
+		return () => window.clearTimeout(timer);
+	}, []);
 	useEffect(() => {
 		if (workspaceRoot && aiProvider) return startIndex(workspaceRoot);
 	}, [workspaceRoot, aiProvider]);
@@ -95,7 +113,7 @@ export default function App() {
 					</div> : null}
 					<button type="button" className="markflow-icon-button" aria-label="AI settings" title="AI settings" onClick={() => setAiSettingsOpen((open) => !open)}><SettingsIcon /></button>
 					<button type="button" className="markflow-icon-button" aria-label="AI assistant" title="AI assistant" aria-pressed={aiPanelOpen} onClick={() => setAiPanelOpen((open) => !open)}><SparklesIcon /></button>
-					{aiProvider?.kind === "remote" ? <span className="markflow-remote-status" role="status" title="Remote AI active" aria-label="Remote AI active" /> : null}
+					{aiProvider && aiProvider.kind !== "local" ? <span className="markflow-remote-status" role="status" title="Remote AI active (Beta)" aria-label="Remote AI active (Beta)" /> : null}
 					<span className="markflow-document-name">{dirty ? "● " : ""}{fileName ?? "No document open"}</span>
 					<ThemeSelector />
 				</div>
@@ -152,23 +170,14 @@ export default function App() {
 
 					{!tree && !isPreviewing ? <EmptyState hasWorkspace={workspaceRoot !== null} /> : null}
 
-					{/* One editor per open document, each mounted for as long as its
-					    tab is open, even while another tab, mode or a preview is
-					    shown, so switching away and back never discards an
-					    in-progress edit, its undo history or its caret — see
-					    EditorView.tsx. */}
+					{/* Reader-only documents do not pay editor startup cost. Once a
+					    document enters edit mode its editor stays mounted while the
+					    tab is open, preserving undo history and caret state. */}
 					{documents.map((document) => {
 						const isActive = document.path === active?.path;
 						const isVisible = isActive && document.mode === "editor" && !isPreviewing;
 						return (
-							<div key={document.path} className={isVisible ? "h-full" : "hidden"}>
-								<EditorView
-									filePath={document.path}
-									isActive={isActive}
-									isVisible={isVisible}
-									revision={document.revision}
-								/>
-							</div>
+							<DeferredEditor key={document.path} document={document} isActive={isActive} isVisible={isVisible} />
 						);
 					})}
 
@@ -184,6 +193,13 @@ export default function App() {
 			) : null}
 		</div>
 	);
+}
+
+function DeferredEditor({ document, isActive, isVisible }: { document: OpenDocument; isActive: boolean; isVisible: boolean }) {
+	if (!document.editorMounted && document.mode !== "editor") return null;
+	return <div className={isVisible ? "h-full" : "hidden"}>
+		<EditorView filePath={document.path} isActive={isActive} isVisible={isVisible} revision={document.revision} />
+	</div>;
 }
 
 function EmptyState({ hasWorkspace }: { hasWorkspace: boolean }) {

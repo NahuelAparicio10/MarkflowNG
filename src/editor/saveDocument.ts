@@ -1,4 +1,6 @@
 import type { Node as PmNode } from "@tiptap/pm/model";
+import type { Root } from "mdast";
+import { serializeMarkdown } from "../core/markdown";
 import { recordSelfWrite } from "../explorer/selfWrites";
 import { serializeDoc } from "./documentText";
 import { remove, rename, writeTextFile } from "./fs";
@@ -26,6 +28,15 @@ function tempPathFor(path: string): string {
  */
 export async function saveDocument(path: string, doc: PmNode): Promise<string> {
 	const text = serializeDoc(doc);
+	return saveText(path, text);
+}
+
+/** Recreates an unedited reader-only document without eagerly mounting Tiptap. */
+export async function saveMarkdownTree(path: string, tree: Root): Promise<string> {
+	return saveText(path, serializeMarkdown(tree));
+}
+
+async function saveText(path: string, text: string): Promise<string> {
 	const tempPath = tempPathFor(path);
 	recordSelfWrite(path, text);
 

@@ -1,5 +1,6 @@
 import { parseMarkdown } from "../core/markdown";
 import { getEditor } from "../editor/editorRegistry";
+import { saveMarkdownTree } from "../editor/saveDocument";
 import { exists, readTextFile } from "../editor/fs";
 import { selectDocument, useSessionStore } from "../store/session";
 import { isSameOrInside, toWorkspaceRelative } from "./paths";
@@ -165,11 +166,14 @@ export async function resolveConflict(path: string, resolution: ConflictResoluti
 
 	switch (resolution) {
 		case "keep-local": {
+			const document = selectDocument(session, path);
 			session.setConflict(path, null);
 			// Forced: the user chose the local version, so the disk gets it
 			// even if it matches what was last loaded — e.g. unedited content
 			// of a file that was deleted.
-			await getEditor(path)?.saveNow({ force: true });
+			const editor = getEditor(path);
+			if (editor) await editor.saveNow({ force: true });
+			else if (document) await saveMarkdownTree(path, document.tree);
 			break;
 		}
 		case "reload-from-disk": {

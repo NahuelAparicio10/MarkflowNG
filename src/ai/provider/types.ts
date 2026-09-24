@@ -11,6 +11,10 @@ export type ProviderErrorCode =
 	| "unavailable"
 	| "rate-limited"
 	| "invalid-response"
+	| "not-installed"
+	| "incompatible"
+	| "no-models"
+	| "invalid-model"
 	| "cancelled";
 
 export interface ProviderFailure {
@@ -25,7 +29,7 @@ export type GenerationResult =
 
 /** Vendor-specific protocols and credential access belong in implementations. */
 export interface AiProvider {
-	readonly kind: "remote" | "local";
+	readonly kind: "remote" | "local" | "opencode";
 	/** Expected provider failures resolve as structured errors rather than throwing. */
 	generate(request: GenerationRequest): Promise<GenerationResult>;
 }

@@ -191,6 +191,23 @@ textarea {
 .markflow-document-name { max-width: min(24vw, 16rem); overflow: hidden; color: var(--mf-muted); font-size: 0.78rem; text-overflow: ellipsis; white-space: nowrap; }
 .markflow-remote-status { width: 0.45rem; height: 0.45rem; border-radius: 999px; background: #4fc07a; box-shadow: 0 0 0 3px color-mix(in srgb, #4fc07a 18%, transparent); }
 
+.markflow-provider-settings { padding: 1rem; border-bottom: 1px solid var(--mf-border); background: var(--mf-surface); }
+.markflow-provider-settings > header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.markflow-provider-settings > header h2 { display: inline; margin: 0 0 0 0.55rem; font-size: 1rem; }
+.markflow-provider-settings > header span { color: var(--mf-accent); font-size: 0.7rem; font-weight: 750; letter-spacing: 0.1em; text-transform: uppercase; }
+.markflow-provider-settings > p { margin: 0.5rem 0 0.85rem; color: var(--mf-muted); font-size: 0.82rem; }
+.markflow-provider-settings form { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)); gap: 0.75rem; align-items: end; }
+.markflow-provider-settings label { display: grid; gap: 0.35rem; font-size: 0.82rem; }
+.markflow-provider-card { display: grid; gap: 0.65rem; padding: 0.75rem; border: 1px solid var(--mf-border); border-radius: 0.65rem; background: var(--mf-bg); }
+.markflow-provider-card p { margin: 0; color: var(--mf-muted); font-size: 0.8rem; line-height: 1.45; }
+.markflow-provider-card button { justify-self: start; }
+.markflow-provider-consent { grid-column: 1 / -1; grid-template-columns: auto 1fr !important; align-items: start; max-width: 64rem; }
+.markflow-provider-consent input { margin-top: 0.2rem; }
+.markflow-provider-error, .markflow-provider-notice { grid-column: 1 / -1; margin: 0; padding: 0.55rem 0.7rem; border-radius: 0.45rem; font-size: 0.82rem; }
+.markflow-provider-error { color: #ff9d9d; background: color-mix(in srgb, #a92525 20%, transparent); }
+.markflow-provider-notice { color: var(--mf-text); background: color-mix(in srgb, var(--mf-accent) 14%, transparent); }
+.markflow-provider-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 0.55rem; }
+
 .markflow-document-toolbar {
 	display: flex;
 	min-height: 2.75rem;

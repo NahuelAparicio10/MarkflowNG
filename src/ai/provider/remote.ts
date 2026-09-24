@@ -7,6 +7,10 @@ const MESSAGES: Record<ProviderErrorCode, string> = {
 	"unavailable": "The provider is unavailable. Check its settings and try again.",
 	"rate-limited": "The provider is rate limited. Try again later.",
 	"invalid-response": "The provider returned an invalid response.",
+	"not-installed": "OpenCode V2 was not found. Install it, then connect an account with /connect.",
+	"incompatible": "This OpenCode version is not compatible with Markflow. Update OpenCode V2.",
+	"no-models": "OpenCode has no usable text models. Open OpenCode and run /connect, or connect a local model.",
+	"invalid-model": "The selected OpenCode model is not available.",
 	"cancelled": "Generation was cancelled.",
 };
 

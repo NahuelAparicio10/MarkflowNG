@@ -48,6 +48,6 @@
 - [ ] 7.1 Add unit/integration tests for OpenCode compatibility, allowlisting, OAuth lifecycle, model discovery, cancellation, redaction, and provider fallback.
 - [ ] 7.2 Add frontend/E2E tests for no-key onboarding, connection testing, consent, Beta states, AI-disabled behavior, and unchanged review-before-apply flows.
 - [x] 7.3 Run packaged Windows association and startup benchmarks and record results in `docs/roadmap.md`, `docs/architecture.md`, and the performance baseline.
-- [ ] 7.4 Run `npm run lint`, `npm run typecheck`, `npm run test`, `npm run build`, and Playwright suites.
+- [x] 7.4 Run `npm run lint`, `npm run typecheck`, `npm run test`, `npm run build`, and Playwright suites.
 - [x] 7.5 Run `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, Rust tests, OpenSpec strict validation, and `git diff --check`.
 - [x] 7.6 Run full Markdown/editor round-trip tests and verify AI, activation, and startup changes produce no document diff without an accepted edit.

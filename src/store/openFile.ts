@@ -4,6 +4,7 @@ import { readTextFile } from "../editor/fs";
 import { recordLoadedContent } from "../explorer/selfWrites";
 import { allowDocumentDirectory } from "../images/documentScope";
 import { selectDocument, useSessionStore } from "./session";
+import { markStartup } from "../startupTiming";
 
 /**
  * Opens the native file dialog and loads the chosen `.md` file into the
@@ -44,7 +45,9 @@ export async function openFileAtPath(path: string): Promise<void> {
 		// Before the document renders, so its images resolve on first paint.
 		await allowDocumentDirectory(path);
 		const tree = parseMarkdown(source);
+		markStartup("startup-document-parsed");
 		useSessionStore.getState().openDocument(path, tree);
+		if (typeof requestAnimationFrame === "function") requestAnimationFrame(() => markStartup("startup-document-visible"));
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);
 		useSessionStore.getState().setError(`Could not open "${path}": ${message}`);
