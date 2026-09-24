@@ -1,4 +1,9 @@
-## ADDED Requirements
+# ai-document-commands Specification
+
+## Purpose
+Provide reviewable AI operations over document selections while preserving schema, mapping, and transaction safeguards.
+
+## Requirements
 
 ### Requirement: Commands operate on document structure
 
@@ -80,6 +85,10 @@ removals as well as additions, with accept and reject available.
 
 ### Requirement: Generative commands in the existing command menu
 
+Generative commands SHALL be contributed to the command registry introduced for the
+slash menu, rather than through a separate menu. Their availability predicate MUST
+exclude them when no provider is configured.
+
 #### Scenario: Opening commands over a selection
 
 - **WHEN** the user presses Ctrl/Cmd+Shift+Space with a non-empty selection
@@ -87,10 +96,6 @@ removals as well as additions, with accept and reject available.
   changes only menu state, not document content
 - **AND** Escape dismisses it without changing the document
 - **AND** changing the selection or editing the document dismisses the menu
-
-Generative commands SHALL be contributed to the command registry introduced for the
-slash menu, rather than through a separate menu. Their availability predicate MUST
-exclude them when no provider is configured.
 
 #### Scenario: Commands appear in the slash menu
 
@@ -108,3 +113,15 @@ exclude them when no provider is configured.
 - **WHEN** a generative command is running
 - **THEN** the menu indicates that it is in progress, using the asynchronous
   contract already defined
+
+### Requirement: Selection commands work without a workspace
+
+AI selection commands SHALL be available for an open standalone Markdown document when a provider is configured, without requiring the containing folder to be opened as a workspace. The existing parser, mapping, review, and transaction safeguards MUST remain in effect.
+
+#### Scenario: Run a selection command in a standalone document
+- **WHEN** a provider is configured, a Markdown file is open without a workspace, and the user invokes an AI command on a non-empty selection
+- **THEN** Markflow generates a suggestion for that selection and presents it for review
+
+#### Scenario: No provider is configured
+- **WHEN** a standalone document is open without a configured provider
+- **THEN** generative commands are unavailable and the interface provides an actionable route to provider settings

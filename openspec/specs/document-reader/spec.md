@@ -58,7 +58,12 @@ indentation.
 
 The system SHALL derive a navigable outline from the document headings. Selecting
 an entry MUST scroll the document to that heading, and the entry corresponding to
-the topmost visible heading MUST be indicated as active.
+the topmost visible heading MUST be indicated as active. The outline SHALL appear
+in a panel on the left and SHALL be open by default when a document is opened. A
+visible icon control at the panel boundary MUST allow the user to collapse the panel
+toward the left or reopen it; the user's visibility choice SHALL persist. The
+user-facing control MUST describe the panel as document navigation rather than
+using the implementation term “Outline”.
 
 #### Scenario: Outline reflects heading structure
 
@@ -79,6 +84,21 @@ the topmost visible heading MUST be indicated as active.
 
 - **WHEN** a document containing no headings is opened
 - **THEN** the outline is empty and does not error
+
+#### Scenario: Outline is initially visible
+
+- **WHEN** a document is opened and the user has not collapsed the outline
+- **THEN** the outline is visible on the left
+
+#### Scenario: Document navigator can be collapsed and restored
+
+- **WHEN** the user activates the icon at the left panel boundary
+- **THEN** the left panel collapses, and activating the control again reopens it
+
+#### Scenario: Outline visibility persists
+
+- **WHEN** the user changes outline visibility and restarts the application
+- **THEN** the previously selected visibility state is restored
 
 ### Requirement: Raw Markdown view
 
@@ -101,7 +121,8 @@ re-reading the file from disk, so that it reflects what would be written on save
 
 The system SHALL model the active view as a single mode value with the states
 `reader`, `raw` and `editor`, and MUST NOT represent it as independent boolean
-flags. Switching modes MUST be available through a keyboard shortcut.
+flags. Switching modes MUST be available through a keyboard shortcut and through
+a visible, labeled control in the application toolbar.
 
 #### Scenario: Mode is a single value
 
@@ -114,8 +135,17 @@ flags. Switching modes MUST be available through a keyboard shortcut.
 - **WHEN** the user presses the mode-switch shortcut in reader mode
 - **THEN** the view changes mode without reloading the document
 
+#### Scenario: Visible control enters edit mode
+
+- **WHEN** a document is in reader mode and the user activates the labeled Edit control
+- **THEN** the document switches to editor mode without reloading or losing its position
+
+#### Scenario: Visible control returns to reader mode
+
+- **WHEN** a document is in editor mode and the user activates the labeled Read control
+- **THEN** the document switches to reader mode without discarding edits
+
 #### Scenario: Scroll position is preserved
 
 - **WHEN** the user switches from reader to raw mode and back
 - **THEN** the document is still open and no content has been altered
-
