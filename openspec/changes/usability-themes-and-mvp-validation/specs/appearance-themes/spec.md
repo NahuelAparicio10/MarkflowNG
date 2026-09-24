@@ -31,3 +31,15 @@ Interactive controls SHALL have visually distinguishable default, hover, keyboar
 #### Scenario: Unavailable AI action explains its prerequisite
 - **WHEN** workspace Q&A is unavailable because no workspace is open
 - **THEN** the interface explains that opening a folder is required instead of presenting an unexplained disabled action
+
+### Requirement: Compact icon-led application chrome
+
+The application SHALL present frequent actions with recognizable icons, accessible names, and tooltips rather than a row of undifferentiated text buttons. Appearance controls MUST be located at the top right. Icons MUST NOT be the sole accessible label.
+
+#### Scenario: Appearance control placement
+- **WHEN** the main application toolbar is displayed
+- **THEN** an appearance icon is available at the top right and opens Dark, Light, and Sepia choices
+
+#### Scenario: Icon remains accessible
+- **WHEN** assistive technology inspects an icon-only action
+- **THEN** the action has a descriptive accessible name and tooltip

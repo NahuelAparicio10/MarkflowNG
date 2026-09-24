@@ -6,8 +6,10 @@ The system SHALL derive a navigable outline from the document headings. Selectin
 an entry MUST scroll the document to that heading, and the entry corresponding to
 the topmost visible heading MUST be indicated as active. The outline SHALL appear
 in a panel on the left and SHALL be open by default when a document is opened. A
-visible control beneath the main toolbar MUST allow the user to collapse the panel
-toward the left or reopen it; the user's visibility choice SHALL persist.
+visible icon control at the panel boundary MUST allow the user to collapse the panel
+toward the left or reopen it; the user's visibility choice SHALL persist. The
+user-facing control MUST describe the panel as document navigation rather than
+using the implementation term “Outline”.
 
 #### Scenario: Outline reflects heading structure
 
@@ -34,9 +36,9 @@ toward the left or reopen it; the user's visibility choice SHALL persist.
 - **WHEN** a document is opened and the user has not collapsed the outline
 - **THEN** the outline is visible on the left
 
-#### Scenario: Outline can be collapsed and restored
+#### Scenario: Document navigator can be collapsed and restored
 
-- **WHEN** the user activates the outline control below the main toolbar
+- **WHEN** the user activates the icon at the left panel boundary
 - **THEN** the left panel collapses, and activating the control again reopens it
 
 #### Scenario: Outline visibility persists
