@@ -2,7 +2,7 @@ import { useState } from "react";
 import { providerFailure } from "./provider/remote";
 import { useAiSettings } from "./provider/settings";
 
-export default function ProviderSettings({ workspace, onClose }: { workspace: string; onClose(): void }) {
+export default function ProviderSettings({ onClose }: { workspace?: string; onClose(): void }) {
 	const [endpoint, setEndpoint] = useState("");
 	const [local, setLocal] = useState(false);
 	const [model, setModel] = useState("");
@@ -16,9 +16,9 @@ export default function ProviderSettings({ workspace, onClose }: { workspace: st
 		setError(null);
 		try {
 			const settings = useAiSettings.getState();
-			if (disable) await settings.disable(workspace);
-			else if (local) await settings.configureLocal(workspace, endpoint, model);
-			else await settings.configureRemote(workspace, { endpoint, model, remoteConsent: consent }, secret);
+			if (disable) await settings.disable();
+			else if (local) await settings.configureLocal(endpoint, model);
+			else await settings.configureRemote({ endpoint, model, remoteConsent: consent }, secret);
 			onClose();
 		} catch (error) {
 			const result = providerFailure(error);
@@ -31,8 +31,8 @@ export default function ProviderSettings({ workspace, onClose }: { workspace: st
 
 	return (
 		<section role="dialog" aria-label="AI provider settings" className="border-b p-4">
-			<h2>AI provider — this workspace</h2>
-			<p>No provider is enabled by default. Settings apply for this session.</p>
+			<h2>AI provider — this device</h2>
+			<p>No provider is enabled by default. Provider and model settings are saved on this device; credentials remain in the operating system credential store.</p>
 			<form onSubmit={(event) => { event.preventDefault(); void save(false); }} className="flex flex-col gap-2">
 				<label>Provider <select disabled={pending} value={local ? "local" : "remote"} onChange={(event) => {
 					const local = event.target.value === "local";

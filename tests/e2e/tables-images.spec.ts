@@ -11,7 +11,7 @@ const FILES = {
 const PNG_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 
 const treeItem = (page: Page, name: string) => page.getByRole("treeitem", { name, exact: true });
-const toolbar = (page: Page) => page.getByRole("toolbar", { name: "Insert and table controls" });
+const toolbar = (page: Page) => page.getByRole("toolbar", { name: "Markdown formatting" });
 const editor = (page: Page) => page.locator(".markflow-editor.ProseMirror");
 
 async function openInEditor(page: Page): Promise<void> {
@@ -32,7 +32,7 @@ test("insert and edit a table, drop an image, save and reopen", async ({ page })
 	await editor(page).locator("p", { hasText: "Weapon stats:" }).click();
 	await page.keyboard.press("End");
 	await page.waitForTimeout(600);
-	await toolbar(page).getByRole("button", { name: "Table", exact: true }).click();
+	await toolbar(page).getByRole("button", { name: "Insert table", exact: true }).click();
 
 	const table = editor(page).locator("table");
 	await expect(table).toBeVisible();

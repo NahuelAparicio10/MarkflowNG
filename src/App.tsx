@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import ProviderSettings from "./ai/ProviderSettings";
+import LegacyProviderMigration from "./ai/LegacyProviderMigration";
 import AiPanel from "./ai/Panel";
 import { startIndex } from "./ai/workspace";
-import { useAiSettings } from "./ai/provider/settings";
+import { DEVICE_PROVIDER_SCOPE, useAiSettings } from "./ai/provider/settings";
 import EditorView from "./editor/EditorView";
 import FileTree from "./explorer/FileTree";
 import { openFolderDialog } from "./explorer/openWorkspace";
@@ -16,11 +17,14 @@ import RawView from "./reader/RawView";
 import { openFileAtPath, openFileDialog } from "./store/openFile";
 import { selectActiveDocument, useSessionStore } from "./store/session";
 import { useSettingsStore } from "./store/settings";
+import { useAppearanceStore } from "./store/appearance";
 import { useWorkspaceStore } from "./store/workspace";
 import ExternalChangeBanner from "./ui/ExternalChangeBanner";
 import TabStrip from "./ui/TabStrip";
+import ThemeSelector from "./ui/ThemeSelector";
 import { useModeShortcut } from "./ui/useModeShortcut";
 import { syncWindowTitle } from "./ui/windowTitle";
+import { BookOpenIcon, CodeIcon, FileIcon, FolderOpenIcon, PanelLeftCloseIcon, PanelLeftOpenIcon, PencilIcon, SettingsIcon, SparklesIcon } from "./ui/icons";
 
 export default function App() {
 	const documents = useSessionStore((state) => state.documents);
@@ -30,11 +34,16 @@ export default function App() {
 	const workspaceRoot = useWorkspaceStore((state) => state.root);
 	const scanning = useWorkspaceStore((state) => state.scanning);
 	const previewPath = useWorkspaceStore((state) => state.previewPath);
-	const [outlineOpen, setOutlineOpen] = useState(false);
+	const outlineOpen = useSettingsStore((state) => state.outlineOpen);
+	const setOutlineOpen = useSettingsStore((state) => state.setOutlineOpen);
 	const [quickOpenShown, setQuickOpenShown] = useState(false);
 	const [aiSettingsOpen, setAiSettingsOpen] = useState(false);
 	const [aiPanelOpen, setAiPanelOpen] = useState(false);
-	const aiProvider = useAiSettings((state) => workspaceRoot ? state.providers.get(workspaceRoot) : undefined);
+	const theme = useAppearanceStore((state) => state.theme);
+	const aiProvider = useAiSettings((state) => state.providers.get(DEVICE_PROVIDER_SCOPE));
+	const legacyProviderConfigurations = useAiSettings((state) => state.legacyConfigurations);
+	const deviceAiConfiguration = useAiSettings((state) => state.deviceConfiguration);
+	const aiMigrationResolved = useAiSettings((state) => state.migrationResolved);
 	useEffect(() => { void useAiSettings.getState().restore(); }, []);
 	useEffect(() => {
 		if (workspaceRoot && aiProvider) return startIndex(workspaceRoot);
@@ -47,6 +56,7 @@ export default function App() {
 	const isPreviewing = previewPath !== null && workspaceRoot !== null;
 
 	useModeShortcut();
+	useEffect(() => { document.documentElement.dataset.theme = theme; }, [theme]);
 	useQuickOpenShortcut(
 		useCallback(() => setQuickOpenShown(true), []),
 		workspaceRoot !== null,
@@ -71,36 +81,30 @@ export default function App() {
 
 	return (
 		<div className="flex h-full flex-col">
-			<header className="flex items-center justify-between gap-4 border-b border-black/10 px-4 py-2 dark:border-white/10">
-				<div className="flex items-center gap-2">
-					<button type="button" onClick={() => void openFileDialog()}>
-						Open…
-					</button>
-					<button type="button" onClick={() => void openFolderDialog()}>
-						Open folder…
-					</button>
-					{tree ? (
-						<button
-							type="button"
-							aria-pressed={outlineOpen}
-							onClick={() => setOutlineOpen((open) => !open)}
-						>
-							Outline
-						</button>
-					) : null}
-					{mode === "editor" && active ? <InputRulesToggle /> : null}
-					<button type="button" disabled={!workspaceRoot} onClick={() => setAiSettingsOpen((open) => !open)}>AI settings</button>
-					<button type="button" disabled={!workspaceRoot} onClick={() => setAiPanelOpen((open) => !open)}>AI assistant</button>
-					{aiProvider?.kind === "remote" ? <span role="status">Remote AI active</span> : null}
+			<header className="markflow-app-toolbar">
+				<div className="markflow-toolbar-section">
+					<strong className="markflow-brand">Markflow</strong>
+					<button type="button" className="markflow-toolbar-action" onClick={() => void openFileDialog()} title="Open Markdown file"><FileIcon /><span>Open</span></button>
+					<button type="button" className="markflow-toolbar-action" onClick={() => void openFolderDialog()} title="Open workspace folder"><FolderOpenIcon /><span>Workspace</span></button>
 				</div>
-				<span className="truncate text-sm opacity-70">
-					{dirty ? "● " : ""}
-					{fileName ?? "No document open"}
-				</span>
+				<div className="markflow-toolbar-section markflow-toolbar-end">
+					{active && !isPreviewing ? <div className="markflow-mode-switch" role="group" aria-label="Document view">
+						<button type="button" aria-label="Read document" title="Read document" aria-pressed={mode === "reader"} onClick={() => useSessionStore.getState().setMode("reader")}><BookOpenIcon /></button>
+						<button type="button" aria-label="View raw Markdown" title="View raw Markdown" aria-pressed={mode === "raw"} onClick={() => useSessionStore.getState().setMode("raw")}><CodeIcon /></button>
+						<button type="button" aria-label="Edit document" title="Edit document (Ctrl+E)" aria-pressed={mode === "editor"} onClick={() => useSessionStore.getState().setMode("editor")}><PencilIcon /></button>
+					</div> : null}
+					<button type="button" className="markflow-icon-button" aria-label="AI settings" title="AI settings" onClick={() => setAiSettingsOpen((open) => !open)}><SettingsIcon /></button>
+					<button type="button" className="markflow-icon-button" aria-label="AI assistant" title="AI assistant" aria-pressed={aiPanelOpen} onClick={() => setAiPanelOpen((open) => !open)}><SparklesIcon /></button>
+					{aiProvider?.kind === "remote" ? <span className="markflow-remote-status" role="status" title="Remote AI active" aria-label="Remote AI active" /> : null}
+					<span className="markflow-document-name">{dirty ? "● " : ""}{fileName ?? "No document open"}</span>
+					<ThemeSelector />
+				</div>
 			</header>
 
 			<TabStrip />
-			{aiSettingsOpen && workspaceRoot ? <ProviderSettings key={workspaceRoot} workspace={workspaceRoot} onClose={() => setAiSettingsOpen(false)} /> : null}
+			{!deviceAiConfiguration && !aiMigrationResolved && Object.keys(legacyProviderConfigurations).length > 0
+				? <LegacyProviderMigration onConfigure={() => setAiSettingsOpen(true)} /> : null}
+			{aiSettingsOpen ? <ProviderSettings key="device-ai-settings" onClose={() => setAiSettingsOpen(false)} /> : null}
 
 			{error ? <p className="border-b border-black/10 px-4 py-2 text-sm text-red-600 dark:border-white/10">{error}</p> : null}
 
@@ -126,9 +130,15 @@ export default function App() {
 					</aside>
 				) : null}
 
-				{outlineOpen && tree && !isPreviewing ? (
-					<aside className="w-64 shrink-0 overflow-auto border-r border-black/10 p-4 dark:border-white/10">
-						<OutlinePanel />
+				{tree && !isPreviewing ? (
+					<aside id="markflow-document-navigation" className={`markflow-document-nav${outlineOpen ? "" : " is-collapsed"}`}>
+						<button type="button" className="markflow-nav-toggle" aria-expanded={outlineOpen} aria-controls="markflow-document-navigation-content"
+							aria-label={outlineOpen ? "Hide document navigation" : "Show document navigation"}
+							title={outlineOpen ? "Hide document navigation" : "Show document navigation"}
+							onClick={() => setOutlineOpen(!outlineOpen)}>
+							{outlineOpen ? <PanelLeftCloseIcon /> : <PanelLeftOpenIcon />}
+						</button>
+						{outlineOpen ? <div id="markflow-document-navigation-content" className="markflow-document-nav-content"><OutlinePanel /></div> : null}
 					</aside>
 				) : null}
 
@@ -166,26 +176,13 @@ export default function App() {
 						mode === "raw" ? <RawView tree={tree} /> : <ReaderView />
 					) : null}
 				</div>
-				{aiPanelOpen && workspaceRoot ? <AiPanel key={workspaceRoot} root={workspaceRoot} onSettings={() => setAiSettingsOpen(true)} /> : null}
+				{aiPanelOpen ? <AiPanel key={workspaceRoot ?? "no-workspace"} root={workspaceRoot} onSettings={() => setAiSettingsOpen(true)} onOpenWorkspace={() => void openFolderDialog()} /> : null}
 			</main>
 
 			{quickOpenShown ? (
 				<QuickOpen onOpen={openWorkspaceFile} onClose={() => setQuickOpenShown(false)} />
 			) : null}
 		</div>
-	);
-}
-
-/** The single opt-out for automatic Markdown conversion — design decision D3. */
-function InputRulesToggle() {
-	const enabled = useSettingsStore((state) => state.inputRulesEnabled);
-	const setEnabled = useSettingsStore((state) => state.setInputRulesEnabled);
-
-	return (
-		<label className="flex items-center gap-1 text-sm">
-			<input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.target.checked)} />
-			Convert Markdown as I type
-		</label>
 	);
 }
 

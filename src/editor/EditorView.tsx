@@ -244,7 +244,7 @@ export default function EditorView({ filePath, isActive, isVisible, revision }: 
 					{recoveryText !== null ? <pre>{recoveryText}</pre> : null}
 				</div>
 			) : null}
-			{editor ? <EditorToolbar editor={editor} images={imageContext} /> : null}
+			{editor ? <EditorToolbar editor={editor} images={imageContext} onEditLink={() => setLinkEditorOpen(true)} /> : null}
 			<EditorContent editor={editor} />
 			{editor ? <SlashMenu editor={editor} /> : null}
 			{aiSuggestion && isVisible ? <AiReview suggestion={aiSuggestion} onResolve={reviewController.resolve} /> : null}

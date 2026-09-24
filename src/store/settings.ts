@@ -12,17 +12,23 @@ export interface SettingsState {
 	 * a change applies immediately.
 	 */
 	inputRulesEnabled: boolean;
+	outlineOpen: boolean;
 
 	setInputRulesEnabled(enabled: boolean): void;
+	setOutlineOpen(open: boolean): void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
 	persist(
 		(set) => ({
 			inputRulesEnabled: true,
+			outlineOpen: true,
 
 			setInputRulesEnabled(enabled) {
 				set({ inputRulesEnabled: enabled });
+			},
+			setOutlineOpen(open) {
+				set({ outlineOpen: open });
 			},
 		}),
 		{

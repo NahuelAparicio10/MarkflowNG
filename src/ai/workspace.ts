@@ -1,6 +1,6 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
-import { useAiSettings } from "./provider/settings";
+import { DEVICE_PROVIDER_SCOPE, useAiSettings } from "./provider/settings";
 
 export interface IndexProgress {
 	root: string; completed: number; total: number; paused: boolean; ready: boolean; error: string | null;
@@ -23,14 +23,14 @@ export const useAiWorkspace = create<AiWorkspaceState>((set, get) => ({
 	progress: new Map(), answers: new Map(), pending: new Set(),
 	setProgress(progress) { set((state) => ({ progress: new Map(state.progress).set(progress.root, progress) })); },
 	async ask(root, question) {
-		const provider = useAiSettings.getState().providers.get(root);
+		const provider = useAiSettings.getState().providers.get(DEVICE_PROVIDER_SCOPE);
 		if (!provider || !question.trim() || get().pending.has(root)) return;
 		set((state) => ({ pending: new Set(state.pending).add(root) }));
 		const answer: Answer = { question, text: "", citations: [], incomplete: false };
 		try {
 			const result = await invoke<Retrieval>("retrieve_workspace", { root, question });
 			answer.incomplete = result.incomplete;
-			if (useAiSettings.getState().providers.get(root) !== provider) return;
+			if (useAiSettings.getState().providers.get(DEVICE_PROVIDER_SCOPE) !== provider) return;
 			if (result.hits.length === 0) {
 				answer.text = "Nothing relevant was found in the indexed workspace.";
 			} else {
@@ -62,7 +62,7 @@ export const useAiWorkspace = create<AiWorkspaceState>((set, get) => ({
 			set((state) => {
 				const pending = new Set(state.pending); pending.delete(root);
 				const answers = new Map(state.answers);
-				if (answer.text && useAiSettings.getState().providers.get(root) === provider) answers.set(root, [...(answers.get(root) ?? []), answer]);
+				if (answer.text && useAiSettings.getState().providers.get(DEVICE_PROVIDER_SCOPE) === provider) answers.set(root, [...(answers.get(root) ?? []), answer]);
 				return { pending, answers };
 			});
 		}

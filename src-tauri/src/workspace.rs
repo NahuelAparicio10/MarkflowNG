@@ -332,6 +332,38 @@ pub mod tests {
     }
 
     #[test]
+    #[ignore = "set MARKFLOW_PERF_WORKSPACE to a generated workspace and run with --ignored"]
+    fn measure_large_workspace_scan() {
+        let root = PathBuf::from(
+            std::env::var_os("MARKFLOW_PERF_WORKSPACE").expect("set generated workspace path"),
+        );
+        let started = std::time::Instant::now();
+        let mut received = 0usize;
+        let mut chunks = 0usize;
+        let summary = walk(
+            &root,
+            &root,
+            || false,
+            |entries| {
+                received += entries.len();
+                chunks += 1;
+            },
+        )
+        .unwrap();
+        let elapsed = started.elapsed();
+        println!(
+            "workspace_scan os={} files+directories={} chunks={} elapsed_ms={} cpus={:?}",
+            std::env::consts::OS,
+            summary.entry_count,
+            chunks,
+            elapsed.as_millis(),
+            std::thread::available_parallelism()
+        );
+        assert!(summary.entry_count >= 5_000);
+        assert_eq!(received, summary.entry_count);
+    }
+
+    #[test]
     fn lists_files_and_folders_recursively_with_relative_slash_paths() {
         let dir = TempDir::new("scan-recursive");
         dir.write("readme.md", "# Readme");

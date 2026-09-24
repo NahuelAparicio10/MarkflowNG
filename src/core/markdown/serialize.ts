@@ -18,5 +18,5 @@ const processor = unified()
  * invariant has no fixed meaning to be tested against.
  */
 export function serializeMarkdown(tree: Root): string {
-	return processor.stringify(tree);
+	return processor.stringify(tree).replace(/^(\s*(?:>\s*)+)\\\[!WARNING\]/gmu, "$1[!WARNING]");
 }

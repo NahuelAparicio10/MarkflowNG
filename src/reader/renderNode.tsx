@@ -25,6 +25,7 @@ import type {
 } from "mdast";
 import type { ReactNode } from "react";
 import MarkdownImage from "./MarkdownImage";
+import CodeBlock from "./CodeBlock";
 
 /** Everything a per-node renderer needs, without importing the dispatcher. */
 export interface RenderContext {
@@ -139,15 +140,13 @@ const renderers: Record<string, NodeRenderer<AnyNode>> = {
 		);
 	}),
 
-	blockquote: defineRenderer<Blockquote>((node, key, context) => (
-		<blockquote key={key}>{renderChildren(node, context)}</blockquote>
-	)),
+	blockquote: defineRenderer<Blockquote>((node, key, context) => {
+		const first = node.children[0];
+		const warning = first?.type === "paragraph" && first.children[0]?.type === "text" && first.children[0].value.trimStart().startsWith("[!WARNING]");
+		return <blockquote key={key} className={warning ? "markflow-callout-warning" : undefined}>{renderChildren(node, context)}</blockquote>;
+	}),
 
-	code: defineRenderer<Code>((node, key) => (
-		<pre key={key}>
-			<code className={node.lang ? `language-${node.lang}` : undefined}>{node.value}</code>
-		</pre>
-	)),
+	code: defineRenderer<Code>((node, key) => <CodeBlock key={key} value={node.value} language={node.lang} />),
 
 	thematicBreak: defineRenderer<ThematicBreak>((_node, key) => <hr key={key} />),
 
@@ -189,10 +188,12 @@ const renderers: Record<string, NodeRenderer<AnyNode>> = {
 		};
 
 		return (
-			<table key={key}>
+			<div key={key} className="markflow-table-scroll">
+			<table>
 				{headRow ? <thead>{renderRow(headRow, 0, true)}</thead> : null}
 				{bodyRows.length > 0 ? <tbody>{bodyRows.map((row, index) => renderRow(row, index, false))}</tbody> : null}
 			</table>
+			</div>
 		);
 	}),
 

@@ -11,6 +11,8 @@ import { createSlashCommandRegistry } from "../../editor/slashMenu/registry";
 import type { AiSuggestion } from "../../editor/slashMenu/types";
 import type { AiProvider } from "../provider/types";
 import AiReview from "../Review";
+import AiPanel from "../Panel";
+import { DEVICE_PROVIDER_SCOPE, useAiSettings } from "../provider/settings";
 import { registerAiCommands, replacementTransaction } from ".";
 
 function setup(provider: AiProvider | undefined, accept = true) {
@@ -49,6 +51,24 @@ describe("AI selection commands through the existing menu", () => {
 		expect(registry.list().every((entry) => !entry.isAvailable(state))).toBe(true);
 		const unconfigured = setup(undefined);
 		expect(slashMenuKey.getState(unconfigured.view.state)?.items).toHaveLength(0);
+	});
+
+	it("uses a device provider for standalone-document selection commands", () => {
+		useAiSettings.setState({ providers: new Map([[DEVICE_PROVIDER_SCOPE, provider("Replacement")]]) });
+		const registry = createSlashCommandRegistry();
+		registerAiCommands(registry, () => useAiSettings.getState().providers.get(DEVICE_PROVIDER_SCOPE));
+		const doc = docFrom("Standalone document");
+		const state = EditorState.create({ doc, selection: TextSelection.create(doc, 1, 10) });
+		expect(registry.list().every((entry) => entry.isAvailable(state))).toBe(true);
+		useAiSettings.setState({ providers: new Map() });
+	});
+
+	it("explains that workspace Q&A needs a folder while leaving provider settings available", () => {
+		useAiSettings.setState({ providers: new Map() });
+		const html = renderToStaticMarkup(<AiPanel root={null} onSettings={() => undefined} onOpenWorkspace={() => undefined} />);
+		expect(html).toContain("Open a folder to ask questions across a workspace");
+		expect(html).toContain("Configure provider");
+		expect(html).not.toContain("<textarea");
 	});
 
 	it("applies validated heading and list structure and reverses everything in one undo", async () => {

@@ -16,6 +16,7 @@
 	--markflow-line-height: 1.7;
 	--markflow-paragraph-spacing: 1em;
 	--markflow-list-indent: 1.5em;
+	--markflow-code-bg: color-mix(in srgb, var(--mf-bg, #15171a) 78%, black);
 
 	font-family: var(--markflow-font-family);
 	font-size: var(--markflow-font-size);
@@ -77,7 +78,18 @@
 .markflow-prose ul,
 .markflow-prose ol {
 	margin-block: var(--markflow-paragraph-spacing);
-	padding-inline-start: var(--markflow-list-indent);
+	padding-inline-start: calc(var(--markflow-list-indent) + 0.35em);
+	list-style-position: outside;
+}
+
+.markflow-prose ul { list-style-type: disc; }
+.markflow-prose ol { list-style-type: decimal; }
+.markflow-prose ul ul { list-style-type: circle; }
+.markflow-prose ul ul ul { list-style-type: square; }
+
+.markflow-prose li::marker {
+	color: var(--mf-accent, currentColor);
+	font-weight: 700;
 }
 
 .markflow-prose li {
@@ -101,17 +113,85 @@
 }
 
 .markflow-prose pre {
-	margin-block: var(--markflow-paragraph-spacing, 1em);
-	padding: 0.75em 1em;
+	margin: 0;
+	padding: 1em 1.15em 1.15em;
 	overflow-x: auto;
+	border: 1px solid var(--mf-border, color-mix(in srgb, currentColor 20%, transparent));
+	border-radius: 0 0 0.65rem 0.65rem;
+	background: var(--markflow-code-bg);
 	font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", monospace;
 	font-size: 0.9em;
 	line-height: 1.5;
+	tab-size: 4;
 }
 
 .markflow-prose code {
 	font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", monospace;
 	font-size: 0.9em;
+}
+
+.markflow-prose :not(pre) > code {
+	padding: 0.12em 0.35em;
+	border: 1px solid var(--mf-border, color-mix(in srgb, currentColor 18%, transparent));
+	border-radius: 0.3rem;
+	background: var(--mf-surface-raised, color-mix(in srgb, currentColor 8%, transparent));
+	color: var(--mf-accent, inherit);
+}
+
+.markflow-code-block,
+.markflow-editor pre {
+	margin-block: calc(var(--markflow-paragraph-spacing, 1em) * 1.25);
+}
+
+.markflow-code-header {
+	display: flex;
+	min-height: 2.25rem;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0.25rem 0.45rem 0.25rem 0.85rem;
+	border: 1px solid var(--mf-border, color-mix(in srgb, currentColor 20%, transparent));
+	border-bottom: 0;
+	border-radius: 0.65rem 0.65rem 0 0;
+	background: color-mix(in srgb, var(--markflow-code-bg) 82%, var(--mf-surface-raised, currentColor));
+	color: var(--mf-muted, currentColor);
+	font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+	font-size: 0.72rem;
+	letter-spacing: 0.03em;
+}
+
+.markflow-code-header button {
+	display: grid;
+	width: 1.8rem;
+	height: 1.8rem;
+	place-items: center;
+	padding: 0;
+	border-color: transparent;
+	background: transparent;
+}
+
+.markflow-code-header > span::before { content: attr(data-language); }
+
+/* The editor cannot add a non-editable header inside a code node. Its language
+   label uses the same visual header through a pseudo-element. */
+.markflow-editor pre {
+	position: relative;
+	padding-top: 3.1em;
+	border-radius: 0.65rem;
+}
+
+.markflow-editor pre::before {
+	content: attr(data-language-label);
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 2.25rem;
+	box-sizing: border-box;
+	padding: 0.55rem 0.85rem;
+	border-bottom: 1px solid var(--mf-border, color-mix(in srgb, currentColor 20%, transparent));
+	color: var(--mf-muted, currentColor);
+	font-size: 0.72rem;
+	letter-spacing: 0.03em;
 }
 
 .markflow-prose hr {
@@ -121,20 +201,52 @@
 	opacity: 0.3;
 }
 
+.markflow-table-scroll,
+.markflow-editor .tableWrapper {
+	margin-block: calc(var(--markflow-paragraph-spacing, 1em) * 1.25);
+	overflow-x: auto;
+	border: 1px solid var(--mf-border, color-mix(in srgb, currentColor 20%, transparent));
+	border-radius: 0.65rem;
+	box-shadow: 0 3px 12px rgb(0 0 0 / 0.08);
+}
+
 .markflow-prose table {
 	margin-block: var(--markflow-paragraph-spacing, 1em);
-	border-collapse: collapse;
+	border-collapse: separate;
+	border-spacing: 0;
 	width: 100%;
+	min-width: 28rem;
 }
+
+.markflow-table-scroll table,
+.markflow-editor .tableWrapper table { margin-block: 0; }
 
 .markflow-prose th,
 .markflow-prose td {
-	border: 1px solid currentColor;
-	padding: 0.4em 0.6em;
+	border: 0;
+	border-right: 1px solid var(--mf-border, color-mix(in srgb, currentColor 18%, transparent));
+	border-bottom: 1px solid var(--mf-border, color-mix(in srgb, currentColor 18%, transparent));
+	padding: 0.65em 0.8em;
 	/* Column alignment is applied inline, per cell, by both modes. */
 	text-align: left;
 	vertical-align: top;
 }
+
+.markflow-prose th {
+	background: var(--mf-surface-raised, color-mix(in srgb, currentColor 8%, transparent));
+	font-weight: 650;
+}
+
+.markflow-prose tr:nth-child(even) td {
+	background: color-mix(in srgb, var(--mf-surface-raised, currentColor) 42%, transparent);
+}
+
+.markflow-prose tr:hover td {
+	background: color-mix(in srgb, var(--mf-accent, currentColor) 8%, transparent);
+}
+
+.markflow-prose tr > :last-child { border-right: 0; }
+.markflow-prose tr:last-child > * { border-bottom: 0; }
 
 .markflow-prose img {
 	max-width: 100%;

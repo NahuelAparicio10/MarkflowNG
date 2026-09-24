@@ -1,9 +1,6 @@
 import { Extension } from "@tiptap/core";
 import { registerAiCommands } from "../../ai/commands";
-import { useAiSettings } from "../../ai/provider/settings";
-import { toWorkspaceRelative } from "../../explorer/paths";
-import { selectActiveDocument, useSessionStore } from "../../store/session";
-import { useWorkspaceStore } from "../../store/workspace";
+import { DEVICE_PROVIDER_SCOPE, useAiSettings } from "../../ai/provider/settings";
 import { registerBlockCommands } from "./blockCommands";
 import { createSlashMenuPlugin } from "./plugin";
 import { slashCommands } from "./registry";
@@ -13,10 +10,7 @@ import type { SlashCommandHost } from "./types";
 // registering with `slashCommands`.
 registerBlockCommands(slashCommands);
 registerAiCommands(slashCommands, () => {
-	const root = useWorkspaceStore.getState().root;
-	const document = selectActiveDocument(useSessionStore.getState());
-	return root && document && toWorkspaceRelative(root, document.path) !== null
-		? useAiSettings.getState().providers.get(root) : undefined;
+	return useAiSettings.getState().providers.get(DEVICE_PROVIDER_SCOPE);
 });
 
 /**

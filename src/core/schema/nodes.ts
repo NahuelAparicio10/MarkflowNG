@@ -130,8 +130,9 @@ const blockquote: NodeSpec = {
 	group: "block",
 	defining: true,
 	parseDOM: [{ tag: "blockquote" }],
-	toDOM() {
-		return ["blockquote", 0];
+	toDOM(node) {
+		const warning = node.firstChild?.textContent.trimStart().startsWith("[!WARNING]");
+		return ["blockquote", warning ? { class: "markflow-callout-warning" } : {}, 0];
 	},
 };
 
@@ -160,7 +161,7 @@ const codeBlock: NodeSpec = {
 		},
 	],
 	toDOM(node) {
-		return ["pre", { "data-language": node.attrs.language as string | null }, ["code", 0]];
+		return ["pre", { "data-language": node.attrs.language as string | null, "data-language-label": (node.attrs.language as string | null) || "Code" }, ["code", 0]];
 	},
 };
 

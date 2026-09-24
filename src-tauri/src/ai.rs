@@ -5,6 +5,8 @@ use reqwest::{redirect::Policy, Client, Url};
 use serde::{Deserialize, Serialize};
 use tauri::State;
 
+const DEVICE_PROVIDER_SCOPE: &str = "__markflow_device__";
+
 #[derive(Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProviderConfig {
@@ -22,9 +24,9 @@ pub struct AiState {
 
 impl AiState {
     pub fn configured(&self, workspace: &str) -> bool {
-        self.providers
-            .lock()
-            .is_ok_and(|providers| providers.contains_key(workspace))
+        self.providers.lock().is_ok_and(|providers| {
+            providers.contains_key(workspace) || providers.contains_key(DEVICE_PROVIDER_SCOPE)
+        })
     }
 }
 
@@ -38,7 +40,7 @@ fn failure(code: &'static str) -> ProviderError {
     ProviderError {
         code,
         message: match code {
-            "not-configured" => "Configure a provider for this workspace first.",
+            "not-configured" => "Configure an AI provider first.",
             "invalid-credential" => "The provider credential is missing or invalid.",
             "rate-limited" => "The provider is rate limited. Try again later.",
             "invalid-response" => "The provider returned an invalid response.",
@@ -82,6 +84,43 @@ fn credential(workspace: &str, config: &ProviderConfig) -> Result<keyring::Entry
     let identity = format!("{workspace}\0{}", config.endpoint);
     let account = format!("{:x}", Sha256::digest(identity.as_bytes()));
     keyring::Entry::new("Markflow.AI", &account).map_err(|_| failure("invalid-credential"))
+}
+
+/// Copies a legacy credential from its workspace identity to the device identity
+/// entirely inside the OS credential store. The source entry is retained for recovery.
+#[tauri::command]
+pub async fn migrate_ai_credential(
+    from_workspace: String,
+    to_workspace: String,
+    config: ProviderConfig,
+) -> Result<(), ProviderError> {
+    validate_credential_migration(&from_workspace, &to_workspace, &config)?;
+    endpoint(&config)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let secret = credential(&from_workspace, &config)?
+            .get_password()
+            .map_err(|_| failure("invalid-credential"))?;
+        credential(&to_workspace, &config)?
+            .set_password(&secret)
+            .map_err(|_| failure("invalid-credential"))
+    })
+    .await
+    .map_err(|_| failure("unavailable"))?
+}
+
+fn validate_credential_migration(
+    from_workspace: &str,
+    to_workspace: &str,
+    config: &ProviderConfig,
+) -> Result<(), ProviderError> {
+    if from_workspace.trim().is_empty()
+        || from_workspace == DEVICE_PROVIDER_SCOPE
+        || to_workspace != DEVICE_PROVIDER_SCOPE
+        || config.local
+    {
+        return Err(failure("not-configured"));
+    }
+    Ok(())
 }
 
 /// Configuration remains session-local; only the credential is persisted, in the OS store.
@@ -269,5 +308,29 @@ mod tests {
         assert_eq!(failure("not-configured").code, "not-configured");
         // generate_ai resolves this guard before credential lookup or Client::builder.
         assert!(state.providers.lock().unwrap().get("workspace").is_none());
+    }
+
+    #[test]
+    fn credential_migration_only_accepts_legacy_to_device_remote_copy() {
+        let remote = ProviderConfig {
+            local: false,
+            endpoint: "https://example.com/v1/chat/completions".into(),
+            model: "model".into(),
+            remote_consent: true,
+        };
+        assert!(validate_credential_migration("C:/notes", DEVICE_PROVIDER_SCOPE, &remote).is_ok());
+        assert!(validate_credential_migration("", DEVICE_PROVIDER_SCOPE, &remote).is_err());
+        assert!(validate_credential_migration(
+            DEVICE_PROVIDER_SCOPE,
+            DEVICE_PROVIDER_SCOPE,
+            &remote
+        )
+        .is_err());
+        assert!(validate_credential_migration("C:/notes", "attacker-controlled", &remote).is_err());
+        let local = ProviderConfig {
+            local: true,
+            ..remote
+        };
+        assert!(validate_credential_migration("C:/notes", DEVICE_PROVIDER_SCOPE, &local).is_err());
     }
 }

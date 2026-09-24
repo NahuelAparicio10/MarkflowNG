@@ -56,3 +56,4 @@
 - [x] 8.5 Expand the editor toolbar to expose inline formatting, paragraph/H1–H6, quotes, code language, lists, warning callouts, horizontal rule, table/image, undo and redo.
 - [x] 8.6 Add a keyboard-shortcut/help surface and tests for toolbar active, disabled, and command behavior.
 - [x] 8.7 Render and round-trip portable `[!WARNING]` callouts without arbitrary HTML colors.
+- [x] 8.8 Restore visible list markers and polish shared code-block and table presentation in reader and editor modes.

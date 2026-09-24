@@ -1,4 +1,4 @@
-import { listen } from "@tauri-apps/api/event";
+import { invoke } from "@tauri-apps/api/core";
 import { openFileAtPath } from "./openFile";
 import { useSessionStore } from "./session";
 
@@ -7,29 +7,13 @@ interface StartupFilePayload {
 	error: string | null;
 }
 
-/**
- * Subscribes to the `startup-file` event emitted once by the Rust side in
- * `src-tauri/src/lib.rs`, which reads the OS-provided file argument — not
- * reachable from the webview — and reports what it found.
- *
- * Called from `main.tsx` before React renders, so the listener is registered
- * as early as the frontend can manage, minimising the window between Rust
- * emitting the event during `setup()` and the frontend being ready for it.
- */
-export function listenForStartupFile(): void {
-	listen<StartupFilePayload>("startup-file", (event) => {
-		const { path, error } = event.payload;
-
-		if (path) {
-			void openFileAtPath(path);
-			return;
-		}
-
-		if (error) {
-			useSessionStore.getState().setError(error);
-		}
-	}).catch(() => {
-		// Not running inside Tauri (e.g. `npm run dev` in a plain browser for
-		// e2e tests): there is no startup event to listen for.
-	});
+/** Query OS launch arguments after the webview is initialized. */
+export async function openStartupFile(): Promise<void> {
+	try {
+		const { path, error } = await invoke<StartupFilePayload>("startup_file");
+		if (path) await openFileAtPath(path);
+		else if (error) useSessionStore.getState().setError(error);
+	} catch {
+		// Plain-browser development has no Tauri command bridge.
+	}
 }

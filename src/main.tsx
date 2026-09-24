@@ -2,12 +2,12 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import { installDevFixtureHatch } from "./store/devFixtureHatch";
-import { listenForStartupFile } from "./store/startupFile";
+import { openStartupFile } from "./store/startupFile";
 import "./styles.css";
 
-// Registered before React renders so the listener is in place as early as
-// possible — see `listenForStartupFile` for why that matters.
-listenForStartupFile();
+// Query after module initialization so the backend startup path cannot be lost
+// to an event emitted before the webview is ready.
+void openStartupFile();
 installDevFixtureHatch();
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(

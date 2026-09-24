@@ -105,7 +105,18 @@ test("mark shortcuts apply formatting to a selection and to text typed next", as
 	await expect(editor.locator("strong")).toHaveText("bold");
 
 	// With nothing selected, the shortcut marks what is typed next.
-	await page.keyboard.press("End");
+	// Collapse the browser selection explicitly after the active-state toolbar
+	// update; Chromium otherwise retains the old range in this synthetic test.
+	await editor.locator("p").evaluate((paragraph) => {
+		const range = document.createRange();
+		range.selectNodeContents(paragraph);
+		range.collapse(false);
+		const selection = window.getSelection();
+		selection?.removeAllRanges();
+		selection?.addRange(range);
+		document.dispatchEvent(new Event("selectionchange"));
+	});
+	await editor.focus();
 	await page.keyboard.press("Control+i");
 	await page.keyboard.type(" Yes");
 

@@ -31,7 +31,8 @@ test("opens a document, shows it formatted, toggles raw view, and navigates via 
 	await expect(reader.locator("h1, h2, h3").first()).toBeVisible();
 	await expect(reader).not.toContainText("#");
 
-	await page.getByRole("button", { name: "Outline" }).click();
+	await page.getByRole("button", { name: "Hide document navigation" }).click();
+	await page.getByRole("button", { name: "Show document navigation" }).click();
 	const firstOutlineEntry = page.locator(".markflow-outline button").first();
 	await expect(firstOutlineEntry).toBeVisible();
 	await firstOutlineEntry.click();

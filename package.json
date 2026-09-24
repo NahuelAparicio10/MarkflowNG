@@ -15,7 +15,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "perf:generate": "node scripts/perf/generate-workloads.mjs"
   },
   "dependencies": {
     "@tanstack/react-virtual": "^3.14.10",
