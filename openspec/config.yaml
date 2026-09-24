@@ -1,0 +1,45 @@
+schema: spec-driven
+
+context: |
+  Markflow — desktop document editor with a Word/Notion-like writing experience
+  that persists to plain Markdown. Two modes of one product: a reader (open a
+  .md and read it formatted, fast) and an editor (write visually, never see
+  Markdown syntax). The source-of-truth exploration doc is Context/EXPLORE.md.
+
+  Stack: Tauri 2 (Rust shell) + React 19 + TypeScript + Vite 7.
+    - @tiptap/react + @tiptap/pm (ProseMirror) — editing engine
+    - unified / remark (remark-parse, remark-stringify, remark-gfm,
+      remark-frontmatter) — mdast is the canonical AST
+    - Zustand — peripheral app state only
+    - Tailwind CSS v4 (via @tailwindcss/vite)
+    - Vitest (unit) + Playwright (e2e)
+    - Tauri plugins: fs (with watch), dialog, opener
+
+  Architecture invariants (see docs/architecture.md):
+    1. Document state lives in ProseMirror. Never duplicated in React or Zustand.
+    2. src/core/ imports no React and no UI. It is testable in isolation.
+    3. Round-trip is closed: open a file, change nothing, save -> empty git diff.
+       Every new schema node extends the mapping AND its tests in the same change.
+    4. One rendering path: reader and explorer preview reuse the core parser.
+    5. Markdown core stays in TypeScript. Migrate to Rust only if measured:
+       parse or serialize of a typical document exceeds 16 ms, or workspace
+       indexing blocks the UI thread.
+
+  Folder layout: src/core/{markdown,schema,mapping,__tests__,fixtures},
+  src/reader, src/editor, src/explorer, src/ai, src/ui, src/store,
+  src-tauri/src, docs/, tests/e2e/.
+
+  Code style: tabs for indentation, double quotes, path alias `@/` -> `src/`.
+  Scripts: npm run lint | typecheck | test | build | tauri:dev.
+
+rules:
+  proposal:
+    - Keep proposals under one page; the "why" only, no implementation detail.
+    - Always state which EXPLORE.md phase the change corresponds to.
+  design:
+    - Every decision must list the alternatives considered and why they lost.
+    - State explicitly how the change preserves the round-trip invariant.
+  tasks:
+    - Every change that touches the schema or mapping must include a task for
+      extending the round-trip test fixtures.
+    - Last task group is always verification (lint, typecheck, test).
