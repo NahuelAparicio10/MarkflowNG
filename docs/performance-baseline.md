@@ -1,89 +1,81 @@
-# Baseline de rendimiento del MVP
+# MVP Performance Baseline
 
-Medición realizada el 24 de septiembre de 2026 en Windows 10 Home 19045, Intel
-Core i7-6700 (4 núcleos/8 procesadores lógicos) y 15,9 GiB de RAM.
+Measurements were collected on September 24–25, 2026, using Windows 10 Home 19045, an Intel Core i7-6700 (4 cores / 8 logical processors), and 15.9 GiB of RAM.
 
-## Cargas reproducibles
+These results describe one reference machine. They are regression baselines, not universal performance guarantees.
 
-`npm run perf:generate` crea, por defecto, en el directorio temporal del sistema:
+## Reproducible workloads
 
-- un documento de 10.000 secciones repetibles (829.414 bytes de Markdown y
-  10.500 bloques renderizados en esta ejecución);
-- un workspace de 5.000 ficheros Markdown más 100 directorios.
+By default, `npm run perf:generate` creates the following fixtures in the system temporary directory:
 
-Los tamaños se pueden cambiar con `MARKFLOW_PERF_BLOCKS` y
-`MARKFLOW_PERF_FILES`. La prueba de navegador es opt-in:
+- a document with 10,000 repeatable sections (829,414 bytes of Markdown and 10,500 rendered blocks in this run);
+- a workspace containing 5,000 Markdown files across 100 directories.
+
+Override fixture sizes with `MARKFLOW_PERF_BLOCKS` and `MARKFLOW_PERF_FILES`.
+
+The browser performance suite is opt-in:
 
 ```powershell
 $env:MARKFLOW_RUN_PERF='1'
 npm run test:e2e -- tests/e2e/performance.spec.ts
 ```
 
-La medición Rust del escaneo usa el workspace generado:
+The Rust scan measurement uses the generated workspace:
 
 ```powershell
 $env:MARKFLOW_PERF_WORKSPACE="$env:TEMP\markflow-perf-workloads\workspace"
 cargo test measure_large_workspace_scan --manifest-path src-tauri/Cargo.toml -- --ignored --nocapture
 ```
 
-## Resultados
+## Results
 
-| Operación | Resultado observado |
+| Operation | Observed result |
 |---|---:|
-| Documento, carga hasta render (navegador, 10.500 bloques) | 3.476 ms |
-| Workspace en memoria, construcción de scan/árbol (5.000 ficheros) | 63,4 ms |
-| Retraso máximo del event loop durante esa operación | 63,4 ms |
-| Escaneo Rust de disco en debug (5.100 entradas, 11 lotes) | 488 ms |
+| Document load through render (browser, 10,500 blocks) | 3,476 ms |
+| In-memory workspace scan/tree construction (5,000 files) | 63.4 ms |
+| Maximum event-loop delay during that operation | 63.4 ms |
+| Debug Rust disk scan (5,100 entries, 11 batches) | 488 ms |
 
-### Arranque empaquetado
+### Packaged startup
 
-Medición añadida el 25 de septiembre de 2026 con el ejecutable release. Cada fase
-se registra localmente solo cuando `MARKFLOW_STARTUP_METRICS_FILE` está definido;
-no existe telemetría de red. El tiempo aproximado desde proceso hasta contenido se
-obtiene sumando `backend-ready` y el marcador relativo del webview.
+Packaged startup measurements were added on September 25, 2026, using the release executable. Each phase is recorded locally only when `MARKFLOW_STARTUP_METRICS_FILE` is defined; Markflow sends no performance telemetry.
+
+Approximate process-to-content time combines the backend-ready duration and the relative webview marker.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/perf/measure-startup.ps1
 ```
 
-El script rechaza la medición si Markflow ya está abierto, ejecuta tres muestras
-vacías y tres con fichero, termina únicamente los procesos que creó y comprueba el
-SHA-256 del documento al finalizar.
+The script refuses to measure while another Markflow process is open, runs three empty samples and three file samples, stops only the processes it created, and verifies the document SHA-256 afterward.
 
-| Operación | Resultado observado |
+| Operation | Observed result |
 |---|---:|
-| Primera apertura vacía tras build (proceso → primer paint) | ~1.710 ms |
-| Apertura vacía caliente, 2 repeticiones | ~638–654 ms |
-| `.md` asociado caliente, proceso → documento visible, 5 repeticiones | ~652–754 ms |
+| First empty launch after build (process → first paint) | ~1,710 ms |
+| Warm empty launch, two repetitions | ~638–654 ms |
+| Warm associated `.md`, process → visible document, five repetitions | ~652–754 ms |
 
-El fixture asociado contenía espacios y `ñ`; las tres ejecuciones llegaron a
-`startup-document-visible` y conservaron el SHA-256 byte por byte. Una segunda
-invocación con Markflow ya abierto terminó en menos de 5 s, mantuvo el primer
-proceso y produjo los marcadores de parseo y documento visible en esa instancia.
-La selección literal por doble clic continúa dependiendo de que Windows cambie
-su `UserChoice` a Markflow.
+The associated fixture contained spaces and `ñ`. Every measured run reached `startup-document-visible` and preserved the document SHA-256 byte for byte. A second activation while Markflow was already running completed in under five seconds, retained the original process, and produced parsing and visible-document markers in that instance.
 
-La barra, Quick Open y la navegación vuelven a responder después del lote, pero
-63,4 ms supera claramente un frame de 16 ms. El documento grande también tiene
-una espera visible. No se justifica aún mover el core a Rust: esta prueba mide el
-pipeline y el render completo, no separa parseo/serialización de creación del DOM.
+Literal Explorer double-click behavior still depends on Windows selecting Markflow as the effective `.md` `UserChoice`.
 
-## Umbrales de seguimiento
+## Interpretation
 
-- Medir parseo y serialización aisladamente; mantener cada operación por debajo
-  de 16 ms para documentos habituales antes de considerar una migración a Rust.
-- Reducir el bloqueo del hilo principal durante incorporación del árbol por
-  debajo de 50 ms y, preferiblemente, repartirlo en lotes menores de 16 ms.
-- Llevar el render caliente del fixture grande por debajo de 1 segundo mediante
-  virtualización/progresividad antes de describirlo como apertura rápida.
-- Mantener el arranque caliente vacío y con fichero por debajo de 1.000 ms en la
-  máquina de referencia; investigar cualquier mediana que lo supere.
+The toolbar, Quick Open, and navigation become responsive after the workspace batch, but a 63.4 ms main-thread task exceeds a 16 ms frame budget. The large document also has a visible delay.
 
-## Limitaciones
+These results do not yet justify moving the Markdown core to Rust because the browser test measures the complete parse, mapping, and DOM-rendering pipeline rather than isolated parsing or serialization.
 
-Playwright usa el fixture web y datos deterministas en memoria; no incluye el
-arranque de WebView2, antivirus, latencia de disco ni el diálogo nativo. La prueba
-Rust se ejecutó en perfil debug. Los números son una línea base de esta máquina,
- no garantías universales. El primer arranque está afectado por caché de disco,
- WebView2 y antivirus; las repeticiones calientes no equivalen a limpiar la caché
- del sistema. Se deben conservar los mismos parámetros al comparar optimizaciones.
+## Regression thresholds
+
+- Measure parsing and serialization independently. Keep each below 16 ms for typical documents before considering a Rust migration.
+- Keep main-thread blocking during workspace-tree ingestion below 50 ms, preferably split into tasks below 16 ms.
+- Reduce warm rendering of the large fixture below one second through virtualization or progressive rendering before describing it as fast large-document opening.
+- Keep warm empty and file startup below 1,000 ms on the reference machine; investigate any median above that threshold.
+
+## Limitations
+
+- Playwright uses the web fixture and deterministic in-memory data. It does not include WebView2 startup, antivirus overhead, disk latency, or native dialogs.
+- The Rust scan measurement used a debug build.
+- First launch is affected by disk cache, WebView2, and antivirus state. Warm repetitions are not equivalent to clearing the operating-system cache.
+- Hardware, power settings, background activity, and filesystem behavior affect results.
+
+Use the same fixture sizes, commands, and environment when comparing future optimizations.

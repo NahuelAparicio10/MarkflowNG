@@ -1,86 +1,63 @@
-# Markflow — Hoja de ruta
+# Markflow Roadmap
 
-Traduce las fases de [`Context/EXPLORE.md`](../Context/EXPLORE.md) a *changes* de
-OpenSpec. Cada *change* se implementa con `/opsx:apply` y se archiva al terminar.
+Markflow uses OpenSpec changes to define, implement, validate, and archive product work. Completed changes and their design history are available under [`openspec/changes/archive/`](../openspec/changes/archive/); current capability specifications live under [`openspec/specs/`](../openspec/specs/).
 
-| Fase (EXPLORE.md) | Change de OpenSpec | Estado | Depende de |
+## MVP delivery status
+
+| Phase | OpenSpec change | Status | Depends on |
 |---|---|---|---|
-| 0 — Esqueleto | — | Hecho | — |
-| 1 — El core | `markdown-core-roundtrip` | Hecho | — |
-| 1.5 — Visor | `markdown-reader` | Hecho | fase 1 |
-| 2 — Editor básico | `document-editor-base` | Hecho | fases 1, 1.5 |
-| 3 — Formato inline y bloques | `inline-block-formatting` | Hecho | fase 2 |
-| 4 — Explorador | `workspace-explorer` | Hecho | fases 1.5, 2 |
-| 5 — Tablas e imágenes | `tables-and-images` | Hecho | fases 3, 4 |
-| 6 — Slash commands | `slash-commands` | Hecho | fases 3, 5 |
-| 7 — IA | `ai-assistance` | Hecho | fases 4, 5, 6 |
-| Validación MVP y usabilidad | `usability-themes-and-mvp-validation` | Hecho | fases 1–7 |
-| Preparación para uso real | `mvp-real-world-readiness` | Implementación validada; faltan comprobaciones manuales | validación MVP |
+| 0 — Foundation | — | Complete | — |
+| 1 — Markdown core | `markdown-core-roundtrip` | Complete | — |
+| 1.5 — Reader | `markdown-reader` | Complete | phase 1 |
+| 2 — Basic editor | `document-editor-base` | Complete | phases 1 and 1.5 |
+| 3 — Inline and block formatting | `inline-block-formatting` | Complete | phase 2 |
+| 4 — Workspace explorer | `workspace-explorer` | Complete | phases 1.5 and 2 |
+| 5 — Tables and images | `tables-and-images` | Complete | phases 3 and 4 |
+| 6 — Slash commands | `slash-commands` | Complete | phases 3 and 5 |
+| 7 — AI assistance | `ai-assistance` | Complete | phases 4, 5, and 6 |
+| MVP usability and validation | `usability-themes-and-mvp-validation` | Complete | phases 1–7 |
+| Real-world readiness | `mvp-real-world-readiness` | Complete and archived | MVP validation |
 
-Los ocho changes de las fases 1–7 están archivados en `openspec/changes/archive/`;
-las capacidades de IA también están sincronizadas en `openspec/specs/`. Las
-comprobaciones automatizadas actuales (lint, typecheck, build, tests y Clippy)
-están verdes. Esto completa el alcance de las fases, pero quedan verificaciones
-de producto en una instalación empaquetada y una excepción de MVP anotada abajo.
+The Windows MVP was packaged, installed, and validated as `v0.1.2`. Automated checks cover linting, type checking, production builds, 721 frontend tests, Rust formatting/Clippy/tests, and Playwright E2E flows.
 
-## Verificación de alcance del MVP
+## MVP scope verification
 
-- **Asociación de `.md` con la aplicación:** el instalador NSIS registra la
-  asociación. Tanto el primer proceso como una activación enviada a una instancia
-  ya abierta validan y canonicalizan un `.md`, autorizan solo ese fichero y lo
-  abren por el cargador normal. Windows conserva la elección `UserChoice`
-  existente; Markflow la detecta y explica que el usuario debe elegir Markflow en
-  “Abrir con” o Aplicaciones predeterminadas, sin modificarla por su cuenta.
-- **Apertura y lectura rápidas:** la línea base reproducible está en
-  [`performance-baseline.md`](performance-baseline.md). El workspace se entrega en
-  lotes, pero el fixture extremo bloquea ~63 ms y el documento de 829 KB tarda
-  ~3,48 s en renderizar; virtualización/progresividad queda como optimización
-  medida posterior al MVP.
-- **Usabilidad del editor:** tema Dark/Light/Sepia, navegación lateral, modos
-  visibles, barra Markdown completa, ayuda de atajos y callouts portables están
-  expuestos sin depender de conocer `Ctrl+E` o el menú `/`.
-- **Instalación de embeddings:** el modelo local de ~91 MB se descarga desde los
-  ajustes de IA cuando el usuario lo solicita; no está incluido en el instalador.
-- **MCP, nube, colaboración, exportación y multi-ventana:** siguen fuera del MVP,
-  como especifica `Context/EXPLORE.md`.
-- **IA sin comprar una API key:** la integración Beta con OpenCode V2 descubre
-  los modelos de las cuentas ya conectadas mediante `/connect` y los modelos
-  locales. La generación usa un agente aislado sin herramientas y entrada por
-  `stdin`; Markflow no lee el almacén de cuentas ni recibe contraseñas o tokens.
-  La conexión directa por API sigue siendo opcional.
+- **Windows `.md` association:** NSIS registers the file type. Both cold process startup and activation of a running instance canonicalize and validate an existing `.md`, authorize only that file, and open it through the normal loader. Markflow reports—but never rewrites—an overriding Windows `UserChoice`.
+- **Fast reading path:** the reproducible measurements are in [`performance-baseline.md`](performance-baseline.md). Reader-only documents do not mount Tiptap, and optional AI initialization happens after first paint.
+- **Editor usability:** Dark, Light, and Sepia themes, left-side navigation, visible Read/Raw/Edit controls, a complete Markdown toolbar, keyboard shortcuts, and portable callouts are available without requiring knowledge of hidden commands.
+- **Local embeddings:** the approximately 91 MB model is downloaded from AI settings only when requested and is not included in the installer.
+- **No-key AI path:** the Beta OpenCode V2 integration discovers models from accounts connected with `/connect` and supported local runtimes. Generation uses an isolated, tool-denied agent and standard input. Markflow does not read OpenCode credentials.
+- **Out of scope for the MVP:** cloud sync, collaboration, MCP workspace serving, export pipelines, and multi-window editing.
 
-`Context/EXPLORE.md` conserva sus casillas sin marcar porque es el documento de
-exploración original, no el registro del estado de implementación. Esta hoja de
-ruta y los changes archivados reflejan el estado actual.
+### AI Beta smoke test
 
-### Smoke test de IA Beta
+1. Connect a supported account in OpenCode with `/connect`, without purchasing a separate API key when an eligible account or free/local model is available.
+2. Open **AI settings → Detect OpenCode** in Markflow.
+3. Choose a model, review remote-content consent when applicable, and run **Test connection**. The test uses synthetic text.
+4. Run a selection action and verify both accept and reject flows.
+5. Ask a question about one open document without embeddings.
+6. Download local embeddings and ask a cited question across an indexed workspace.
+7. Confirm that rejection, cancellation, and provider errors leave the document unchanged.
 
-Sin comprar una API key: conectar una cuenta soportada con `/connect` en OpenCode,
-abrir **Ajustes de IA → Detectar OpenCode**, elegir un modelo con coste de catálogo
-cero cuando exista y ejecutar **Probar conexión**. La prueba usa texto sintético.
-Después se valida una acción sobre selección con aceptar y rechazar, y una pregunta
-RAG en un workspace ya indexado. El documento debe permanecer idéntico al rechazar
-o ante cualquier error/cancelación. Una clase de proveedor no se considera lista
-si no supera este recorrido; la UI mantiene la etiqueta Beta.
+Provider classes remain labeled Beta until they pass this flow.
 
-## Fase 0 — qué quedó hecho
+## Foundation delivered outside OpenSpec
 
-Fuera de OpenSpec, por ser andamiaje y no comportamiento especificable:
+The initial project scaffolding was not behavior that needed a product specification:
 
-- Proyecto Tauri 2 + React 19 + TypeScript + Vite 7, renombrado a Markflow.
-- Dependencias del stack de `EXPLORE.md` sección 3 instaladas.
-- Estructura de carpetas de `EXPLORE.md` sección 5.
-- Tailwind v4, alias `@/`, Vitest, Playwright, ESLint.
-- Plugins de Tauri `fs` (con `watch`), `dialog` y `opener` registrados.
-- CI en GitHub Actions: lint, typecheck y tests en Node; `fmt` y `clippy` en Rust.
-- `docs/architecture.md` con las invariantes del proyecto.
+- Tauri 2, React 19, TypeScript, and Vite 7;
+- the core directory structure and dependency stack;
+- Tailwind CSS 4, the `@/` alias, Vitest, Playwright, and ESLint;
+- Tauri filesystem, dialog, and opener plugins;
+- GitHub Actions for frontend and Rust quality gates;
+- architecture and performance documentation.
 
-## Cadena de dependencias (completada)
+## Completed dependency chain
 
-```
-markdown-core-roundtrip          ← la que decide si el proyecto se sostiene
+```text
+markdown-core-roundtrip
         │
-        ├─► markdown-reader      ← primer entregable útil
+        ├─► markdown-reader
         │        │
         │        ▼
         └─► document-editor-base
@@ -100,20 +77,18 @@ markdown-core-roundtrip          ← la que decide si el proyecto se sostiene
                                  ai-assistance
 ```
 
-`markdown-reader` y `workspace-explorer` no bloquean la cadena principal: el visor
-puede ir en paralelo al editor una vez cerrado el core, y el explorador puede ir en
-paralelo a `inline-block-formatting`.
+The reader and workspace explorer did not block the main dependency chain: the reader could proceed alongside editor work after the core, and the explorer could proceed alongside inline formatting.
 
-## Decisiones y trabajo posterior al MVP
+## Post-MVP priorities
 
-Las decisiones de implementación de las fases están resueltas en sus `design.md`.
-El trabajo posterior al MVP incluye:
+The next changes should be proposed and validated independently rather than silently expanding the MVP:
 
-- **Migración del core a Rust.** No se decide por gusto: solo si se mide que el
-  parseo o la serialización de un documento típico supera los 16 ms, o si el
-  indexado bloquea la UI. Criterio en `docs/architecture.md`.
-- **Forma normal del serializador.** Fijada en `markdown-core-roundtrip` y
-  vinculante para todas las fases posteriores. Cambiarla invalida el corpus de
-  fixtures.
-- **MCP.** Exponer el workspace como servidor MCP sigue siendo candidato posterior
-  al MVP; no forma parte de `ai-assistance`.
+1. **Code signing and trusted distribution.** Sign Windows installers and automate release builds and provenance.
+2. **Performance progression.** Virtualize or progressively render very large documents and split large workspace-tree updates into smaller UI tasks.
+3. **Embedded account onboarding.** Add OAuth/device-code UI only through supported OpenCode interfaces; keep external `/connect` as the safe fallback.
+4. **AI validation expansion.** Add full onboarding E2E coverage and broader local-provider testing.
+5. **Accessibility and localization.** Audit keyboard/screen-reader behavior and introduce a maintainable localization system before translating the product UI.
+6. **Optional platform expansion.** Package and validate macOS/Linux separately rather than claiming support from cross-platform source alone.
+7. **MCP, sync, collaboration, export, and multi-window workflows.** Treat each as a separate product change with explicit trust and persistence boundaries.
+
+The Markdown core should migrate to Rust only if isolated measurements show that normal parsing or serialization exceeds 16 ms, or if indexing blocks the UI. The criterion is documented in [`architecture.md`](architecture.md).
