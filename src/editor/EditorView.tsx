@@ -210,6 +210,9 @@ export default function EditorView({ filePath, isActive, isVisible, revision }: 
 
 	useEffect(() => {
 		const handle: EditorHandle = {
+			getMarkdown() {
+				return editor ? serializeDoc(editor.state.doc) : baselineRef.current;
+			},
 			saveNow(options) {
 				autosaveRef.current?.cancel();
 				return performSave(options);
@@ -217,7 +220,7 @@ export default function EditorView({ filePath, isActive, isVisible, revision }: 
 		};
 		registerEditor(filePath, handle);
 		return () => unregisterEditor(filePath, handle);
-	}, [filePath, performSave]);
+	}, [editor, filePath, performSave]);
 
 	const handleExplicitSave = useCallback(() => {
 		autosaveRef.current?.cancel();

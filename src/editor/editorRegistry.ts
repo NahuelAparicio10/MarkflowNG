@@ -5,6 +5,8 @@
  * (`src/explorer/externalChanges.ts`) has to be able to trigger one.
  */
 export interface EditorHandle {
+	/** Current unsaved Markdown, without writing it to disk. */
+	getMarkdown?(): string;
 	/**
 	 * Saves now. `force` writes even when the content matches what was last
 	 * loaded or saved — needed to re-create a file deleted on disk.

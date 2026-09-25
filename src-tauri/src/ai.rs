@@ -22,14 +22,6 @@ pub struct AiState {
     providers: Mutex<HashMap<String, ProviderConfig>>,
 }
 
-impl AiState {
-    pub fn configured(&self, workspace: &str) -> bool {
-        self.providers.lock().is_ok_and(|providers| {
-            providers.contains_key(workspace) || providers.contains_key(DEVICE_PROVIDER_SCOPE)
-        })
-    }
-}
-
 #[derive(Debug, Serialize)]
 pub struct ProviderError {
     code: &'static str,
@@ -304,7 +296,6 @@ mod tests {
     #[test]
     fn an_unconfigured_provider_is_rejected_before_any_transport_is_created() {
         let state = AiState::default();
-        assert!(!state.configured("workspace"));
         assert_eq!(failure("not-configured").code, "not-configured");
         // generate_ai resolves this guard before credential lookup or Client::builder.
         assert!(state.providers.lock().unwrap().get("workspace").is_none());

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { discoverOpenCode, testOpenCode, type OpenCodeModel, type OpenCodeStatus } from "./provider/opencode";
 import { providerFailure } from "./provider/remote";
 import { useAiSettings } from "./provider/settings";
@@ -20,7 +20,7 @@ export default function ProviderSettings({ onClose }: { workspace?: string; onCl
 	const [model, setModel] = useState(saved?.model ?? "");
 	const [secret, setSecret] = useState("");
 	const [consent, setConsent] = useState(saved?.remoteConsent ?? false);
-	const [pending, setPending] = useState(false);
+	const [pending, setPending] = useState(saved?.kind === "opencode");
 	const [testing, setTesting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [notice, setNotice] = useState<string | null>(null);
@@ -30,6 +30,22 @@ export default function ProviderSettings({ onClose }: { workspace?: string; onCl
 		() => openCode?.models.find((candidate) => `${candidate.providerId}/${candidate.id}` === model) ?? null,
 		[model, openCode],
 	);
+
+	useEffect(() => {
+		if (saved?.kind !== "opencode") return;
+		let active = true;
+		void discoverOpenCode(workspace).then((status) => {
+			if (!active) return;
+			setOpenCode(status);
+			setNotice(`OpenCode ${status.version} detected. Restored ${saved.model}.`);
+			setPending(false);
+		}).catch((error) => {
+			if (!active) return;
+			setError(safeProviderMessage(error));
+			setPending(false);
+		});
+		return () => { active = false; };
+	}, [saved, workspace]);
 
 	async function detectOpenCode() {
 		setPending(true);

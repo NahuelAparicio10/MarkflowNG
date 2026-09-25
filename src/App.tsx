@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import ProviderSettings from "./ai/ProviderSettings";
 import LegacyProviderMigration from "./ai/LegacyProviderMigration";
 import AiPanel from "./ai/Panel";
-import { startIndex } from "./ai/workspace";
 import { DEVICE_PROVIDER_SCOPE, useAiSettings } from "./ai/provider/settings";
 import EditorView from "./editor/EditorView";
 import FileTree from "./explorer/FileTree";
@@ -63,9 +62,6 @@ export default function App() {
 		}, 1200);
 		return () => window.clearTimeout(timer);
 	}, []);
-	useEffect(() => {
-		if (workspaceRoot && aiProvider) return startIndex(workspaceRoot);
-	}, [workspaceRoot, aiProvider]);
 
 	const fileName = active ? active.name : null;
 	const tree = active ? active.tree : null;
@@ -185,7 +181,7 @@ export default function App() {
 						mode === "raw" ? <RawView tree={tree} /> : <ReaderView />
 					) : null}
 				</div>
-				{aiPanelOpen ? <AiPanel key={workspaceRoot ?? "no-workspace"} root={workspaceRoot} onSettings={() => setAiSettingsOpen(true)} onOpenWorkspace={() => void openFolderDialog()} /> : null}
+				{aiPanelOpen ? <AiPanel key={workspaceRoot ?? "no-workspace"} root={workspaceRoot} document={active} onSettings={() => setAiSettingsOpen(true)} onOpenWorkspace={() => void openFolderDialog()} onClose={() => setAiPanelOpen(false)} /> : null}
 			</main>
 
 			{quickOpenShown ? (

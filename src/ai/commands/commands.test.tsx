@@ -65,8 +65,8 @@ describe("AI selection commands through the existing menu", () => {
 
 	it("explains that workspace Q&A needs a folder while leaving provider settings available", () => {
 		useAiSettings.setState({ providers: new Map() });
-		const html = renderToStaticMarkup(<AiPanel root={null} onSettings={() => undefined} onOpenWorkspace={() => undefined} />);
-		expect(html).toContain("Open a folder to ask questions across a workspace");
+		const html = renderToStaticMarkup(<AiPanel root={null} document={null} onSettings={() => undefined} onOpenWorkspace={() => undefined} onClose={() => undefined} />);
+		expect(html).toContain("Connect an AI provider to ask questions");
 		expect(html).toContain("Configure provider");
 		expect(html).not.toContain("<textarea");
 	});

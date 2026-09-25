@@ -2,7 +2,7 @@ pub mod chunks;
 pub mod database;
 pub mod embedding;
 
-use crate::{ai::AiState, watcher::WatchChange, workspace};
+use crate::{watcher::WatchChange, workspace};
 use database::Hit;
 use fastembed::TextEmbedding;
 use rusqlite::Connection;
@@ -341,13 +341,9 @@ fn paths(app: &AppHandle, root: &str) -> Result<(PathBuf, PathBuf), String> {
 pub fn start_index(
     app: AppHandle,
     state: State<'_, IndexState>,
-    ai: State<'_, AiState>,
     root: String,
     progress: Channel<Progress>,
 ) -> Result<(), String> {
-    if !ai.configured(&root) {
-        return Err("Configure a provider first.".into());
-    }
     workspace::ensure_root_allowed(&app, Path::new(&root))?;
     let (cache, model) = paths(&app, &root)?;
     state
@@ -362,14 +358,8 @@ pub fn start_index(
 }
 
 #[tauri::command]
-pub async fn install_embedding_model(
-    app: AppHandle,
-    ai: State<'_, AiState>,
-    root: String,
-) -> Result<(), String> {
-    if !ai.configured(&root) {
-        return Err("Configure a provider first.".into());
-    }
+pub async fn install_embedding_model(app: AppHandle, root: String) -> Result<(), String> {
+    workspace::ensure_root_allowed(&app, Path::new(&root))?;
     let (_, path) = paths(&app, &root)?;
     embedding::download_model(&path).await
 }
@@ -390,13 +380,9 @@ pub fn stop_index(state: State<'_, IndexState>, root: String) {
 #[tauri::command]
 pub async fn retrieve_workspace(
     state: State<'_, IndexState>,
-    ai: State<'_, AiState>,
     root: String,
     question: String,
 ) -> Result<Retrieval, String> {
-    if !ai.configured(&root) {
-        return Err("Configure a provider first.".into());
-    }
     let (reply, receiver) = mpsc::channel();
     state
         .sender
