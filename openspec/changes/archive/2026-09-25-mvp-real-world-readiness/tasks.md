@@ -34,7 +34,7 @@
 - [x] 5.2 Queue validated file-open events until frontend readiness, deduplicate activations, focus the existing window, and open each document in reader mode through the normal loader.
 - [x] 5.3 Reject missing, malformed, directory, flag, and non-Markdown inputs without broadening scope; test spaces, Unicode, shell metacharacters, and files outside the workspace.
 - [x] 5.4 Detect and explain when Windows `UserChoice` overrides installer registration, linking to a supported Default Apps/“Open with” flow without rewriting protected registry state.
-- [ ] 5.5 Build and install NSIS/MSI packages, then manually verify cold and running-instance Explorer opens plus byte-identical no-edit save behavior.
+- [x] 5.5 Build and install NSIS/MSI packages, then manually verify cold and running-instance Explorer opens plus byte-identical no-edit save behavior.
 
 ## 6. Startup improvements
 
