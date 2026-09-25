@@ -1,0 +1,65 @@
+/*
+ * Reader-only presentation: node types the editor schema does not model
+ * (raw HTML) and layout for the reader shell itself. Presentation shared with
+ * the editor — including lists, quotes, code, rules, tables and images —
+ * lives in src/ui/typography.css instead; see docs/architecture.md.
+ */
+
+/* Frontmatter-adjacent, unexecuted HTML: shown as inert source, not markup. */
+.markflow-raw-html {
+	white-space: pre-wrap;
+	opacity: 0.7;
+}
+
+.markflow-raw {
+	display: flex;
+	height: 100%;
+	flex-direction: column;
+}
+
+.markflow-raw-notice {
+	padding: 0.5rem 1rem;
+	font-size: 0.75rem;
+	opacity: 0.7;
+}
+
+.markflow-raw-content {
+	flex: 1;
+	overflow: auto;
+	margin: 0;
+	padding: 0 1rem 1rem;
+	white-space: pre-wrap;
+	font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", monospace;
+	font-size: 0.85rem;
+}
+
+.markflow-outline {
+	font-size: 0.85rem;
+}
+
+.markflow-outline ul {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.markflow-outline li {
+	margin: 0;
+}
+
+.markflow-outline button {
+	display: block;
+	width: 100%;
+	padding: 0.25em 0.5em;
+	text-align: left;
+	background: none;
+	border: none;
+	cursor: pointer;
+	color: inherit;
+	opacity: 0.75;
+}
+
+.markflow-outline li.markflow-outline-active button {
+	opacity: 1;
+	font-weight: 600;
+}

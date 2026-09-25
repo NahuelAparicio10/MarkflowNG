@@ -1,0 +1,5 @@
+- [ ] Todo
+- [x] Done
+- Plain item in the same list
+  - [ ] Nested todo
+  - [x] Nested done

@@ -1,0 +1,263 @@
+/*
+ * Editor-only presentation. Typography shared with the reader lives in
+ * src/ui/typography.css; this file covers what only makes sense once the
+ * document is editable.
+ */
+
+/* editorProps.attributes puts both classes on Tiptap's own content root, not
+   on a wrapping element — so this must not be a descendant selector. */
+.markflow-editor.ProseMirror {
+	outline: none;
+}
+
+/* Placeholder for content outside the editable schema — see the `preserved`
+   and `preservedInline` node specs in src/core/schema/nodes.ts. */
+.markflow-editor .markflow-preserved,
+.markflow-editor .markflow-preserved-inline {
+	display: block;
+	margin-block: var(--markflow-paragraph-spacing, 1em);
+	border: 1px dashed currentColor;
+	border-radius: 4px;
+	padding: 0.5em 0.75em;
+	opacity: 0.6;
+	font-size: 0.85em;
+	cursor: default;
+}
+
+.markflow-editor .markflow-preserved-inline {
+	display: inline-block;
+	margin-block: 0;
+	padding: 0 0.4em;
+}
+
+/* A task item's checkbox and content sit in separate wrappers, because the
+   content hole must be the only child of its element — see the listItem node
+   spec. Laid out side by side here, as the reader lays out its own. */
+.markflow-editor li.markflow-task-item {
+	display: flex;
+	align-items: baseline;
+}
+
+.markflow-editor .markflow-task-checkbox input {
+	cursor: pointer;
+}
+
+.markflow-editor .markflow-task-content {
+	flex: 1;
+	min-width: 0;
+}
+
+.markflow-editor .markflow-task-content > :first-child {
+	margin-top: 0;
+}
+
+.markflow-editor a {
+	cursor: text;
+}
+
+.markflow-link-editor {
+	position: fixed;
+	z-index: 10;
+	display: flex;
+	gap: 0.4rem;
+	align-items: center;
+	padding: 0.4rem;
+	border: 1px solid currentColor;
+	border-radius: 6px;
+	background: Canvas;
+	color: CanvasText;
+	font-size: 0.85rem;
+	box-shadow: 0 4px 16px rgb(0 0 0 / 0.15);
+}
+
+.markflow-link-editor input {
+	width: 18rem;
+	padding: 0.2rem 0.4rem;
+	border: 1px solid currentColor;
+	border-radius: 4px;
+	background: transparent;
+	color: inherit;
+}
+
+.markflow-save-recovery {
+	margin: 1rem 1.5rem 0;
+	padding: 0.75rem 1rem;
+	border: 1px solid currentColor;
+	border-radius: 4px;
+	font-size: 0.85rem;
+}
+
+.markflow-save-recovery pre {
+	margin-top: 0.5rem;
+	max-height: 12rem;
+	overflow: auto;
+	white-space: pre-wrap;
+}
+
+/* Tables. The column-resize handle and cell selection classes are the ones
+   prosemirror-tables sets; widths it writes are view state only. */
+.markflow-editor .tableWrapper {
+	/* Shared surface/border treatment lives in typography.css. */
+}
+
+.markflow-editor .tableWrapper table {
+	margin-block: 0;
+	table-layout: fixed;
+}
+
+.markflow-editor td,
+.markflow-editor th {
+	position: relative;
+}
+
+.markflow-editor .selectedCell::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: Highlight;
+	opacity: 0.2;
+	pointer-events: none;
+}
+
+.markflow-editor .column-resize-handle {
+	position: absolute;
+	top: 0;
+	right: -2px;
+	bottom: 0;
+	width: 4px;
+	background: Highlight;
+	pointer-events: none;
+}
+
+.markflow-editor.resize-cursor {
+	cursor: col-resize;
+}
+
+/* Images, drawn by ImageView. The handle only shows on a selected image. */
+.markflow-editor .markflow-image {
+	position: relative;
+	display: inline-block;
+	max-width: 100%;
+	line-height: 0;
+}
+
+.markflow-editor .markflow-image img {
+	max-width: 100%;
+}
+
+.markflow-editor .markflow-image.is-selected img {
+	outline: 2px solid Highlight;
+	outline-offset: 1px;
+}
+
+.markflow-editor .markflow-image .markflow-image-missing,
+.markflow-editor .markflow-image.is-missing img {
+	display: none;
+}
+
+.markflow-editor .markflow-image.is-missing .markflow-image-missing {
+	display: inline-block;
+	line-height: var(--markflow-line-height);
+}
+
+.markflow-editor .markflow-image-resize {
+	display: none;
+	position: absolute;
+	right: -5px;
+	bottom: -5px;
+	width: 10px;
+	height: 10px;
+	border: 1px solid Canvas;
+	border-radius: 2px;
+	background: Highlight;
+	cursor: nwse-resize;
+	touch-action: none;
+}
+
+.markflow-editor .markflow-image.is-selected:not(.is-missing) .markflow-image-resize {
+	display: block;
+}
+
+.markflow-editor-toolbar {
+	position: sticky;
+	top: 0;
+	z-index: 5;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35rem 0.55rem;
+	align-items: center;
+	padding: 0.35rem 1rem;
+	border-bottom: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+	background: Canvas;
+	font-size: 0.8rem;
+}
+
+.markflow-editor-toolbar [role="group"] {
+	display: flex;
+	gap: 0.25rem;
+	align-items: center;
+}
+
+.markflow-editor-toolbar button[aria-pressed="true"] {
+	font-weight: 650;
+}
+
+.markflow-format-button { display: inline-grid; width: 2rem; height: 2rem; place-items: center; padding: 0; font-size: 0.8rem; }
+.markflow-editor-toolbar select { height: 2rem; padding-block: 0.2rem; }
+.markflow-code-language { display: flex; align-items: center; gap: 0.35rem; color: var(--mf-muted); }
+.markflow-code-language input { width: 6rem; }
+.markflow-context-controls { flex-basis: 100%; padding-top: 0.3rem; border-top: 1px solid var(--mf-border); }
+.markflow-toolbar-popover,
+.markflow-editor-help { position: absolute; z-index: 20; top: calc(100% + 0.35rem); right: 0.75rem; padding: 0.75rem; border: 1px solid var(--mf-border); border-radius: 0.65rem; background: var(--mf-surface-raised); box-shadow: var(--mf-shadow); }
+.markflow-toolbar-popover { display: flex; gap: 0.4rem; }
+.markflow-editor-help { width: min(22rem, calc(100vw - 2rem)); }
+.markflow-popover-heading { display: flex; align-items: center; justify-content: space-between; }
+.markflow-popover-heading button { border: 0; background: transparent; font-size: 1.2rem; }
+.markflow-editor-help dl { display: grid; grid-template-columns: 8rem 1fr; gap: 0.35rem 0.75rem; margin: 0.75rem 0; }
+.markflow-editor-help dt { color: var(--mf-muted); font-family: ui-monospace, monospace; font-size: 0.75rem; }
+.markflow-editor-help dd { margin: 0; font-size: 0.8rem; }
+
+.markflow-editor-toolbar input {
+	padding: 0.1rem 0.4rem;
+	border: 1px solid currentColor;
+	border-radius: 4px;
+	background: transparent;
+	color: inherit;
+}
+
+/* The slash menu's popup, placed at the caret by src/ui/SlashMenu.tsx. */
+.markflow-slash-menu {
+	position: fixed;
+	z-index: 10;
+	min-width: 12rem;
+	max-height: 18rem;
+	overflow-y: auto;
+	padding: 0.25rem;
+	border: 1px solid currentColor;
+	border-radius: 6px;
+	background: Canvas;
+	color: CanvasText;
+	font-size: 0.85rem;
+	box-shadow: 0 4px 16px rgb(0 0 0 / 0.15);
+}
+
+.markflow-slash-menu-group {
+	padding: 0.35rem 0.5rem 0.15rem;
+	font-size: 0.75rem;
+	opacity: 0.6;
+}
+
+.markflow-slash-menu-item {
+	padding: 0.3rem 0.5rem;
+	border-radius: 4px;
+	cursor: pointer;
+}
+
+.markflow-slash-menu-item[aria-selected="true"] {
+	background: Highlight;
+	color: HighlightText;
+}
+
+.markflow-slash-menu[aria-busy="true"] .markflow-slash-menu-item {
+	cursor: progress;
+}

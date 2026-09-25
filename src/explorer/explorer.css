@@ -1,0 +1,193 @@
+/*
+ * Workspace explorer, tab strip and external-change notice: the shell around
+ * documents. Nothing here styles document content — that stays in
+ * src/ui/typography.css and the reader/editor sheets.
+ */
+
+.markflow-explorer {
+	display: flex;
+	width: 16rem;
+	flex-shrink: 0;
+	flex-direction: column;
+	border-right: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+	font-size: 0.85rem;
+}
+
+.markflow-explorer-title {
+	overflow: hidden;
+	padding: 0.5rem 0.75rem;
+	font-weight: 600;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.markflow-explorer-scanning {
+	font-weight: normal;
+	opacity: 0.6;
+}
+
+.markflow-tree {
+	flex: 1;
+	overflow: auto;
+	outline: none;
+}
+
+.markflow-tree-row {
+	display: flex;
+	align-items: center;
+	overflow: hidden;
+	cursor: default;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	user-select: none;
+}
+
+.markflow-tree-row:hover {
+	background: color-mix(in srgb, currentColor 6%, transparent);
+}
+
+.markflow-tree-row-selected,
+.markflow-tree-row-selected:hover {
+	background: color-mix(in srgb, currentColor 14%, transparent);
+}
+
+.markflow-tree:focus-visible .markflow-tree-row-selected {
+	outline: 1px solid color-mix(in srgb, currentColor 40%, transparent);
+	outline-offset: -1px;
+}
+
+/* Non-Markdown files: listed so the tree matches the folder, but inert. */
+.markflow-tree-row-inert {
+	opacity: 0.45;
+}
+
+.markflow-tree-twisty {
+	display: inline-block;
+	width: 1rem;
+	flex-shrink: 0;
+	text-align: center;
+	opacity: 0.7;
+}
+
+.markflow-tabs {
+	display: flex;
+	overflow-x: auto;
+	border-bottom: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+	font-size: 0.85rem;
+}
+
+.markflow-tab {
+	display: flex;
+	align-items: center;
+	gap: 0.25rem;
+	padding: 0.35rem 0.5rem 0.35rem 0.75rem;
+	border-right: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+	cursor: default;
+	opacity: 0.7;
+	white-space: nowrap;
+}
+
+.markflow-tab-active {
+	box-shadow: inset 0 -2px 0 currentColor;
+	opacity: 1;
+}
+
+.markflow-tab-close {
+	padding: 0 0.3rem;
+	border-radius: 3px;
+	line-height: 1.2;
+	opacity: 0.6;
+}
+
+.markflow-tab-close:hover {
+	background: color-mix(in srgb, currentColor 12%, transparent);
+	opacity: 1;
+}
+
+.markflow-conflict {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem 1rem;
+	padding: 0.5rem 1rem;
+	border-bottom: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+	background: color-mix(in srgb, #d97706 14%, transparent);
+	font-size: 0.85rem;
+}
+
+.markflow-conflict-actions {
+	display: flex;
+	gap: 0.5rem;
+}
+
+.markflow-preview-bar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0.35rem 1rem;
+	border-bottom: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+	font-size: 0.75rem;
+	opacity: 0.8;
+}
+
+.markflow-preview-error {
+	padding: 1rem;
+	font-size: 0.85rem;
+}
+
+.markflow-quick-open-backdrop {
+	position: fixed;
+	inset: 0;
+	display: flex;
+	justify-content: center;
+	padding-top: 12vh;
+	background: rgb(0 0 0 / 0.2);
+}
+
+.markflow-quick-open {
+	display: flex;
+	width: min(36rem, calc(100vw - 2rem));
+	max-height: 60vh;
+	flex-direction: column;
+	overflow: hidden;
+	border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+	border-radius: 6px;
+	background: Canvas;
+	box-shadow: 0 12px 32px rgb(0 0 0 / 0.25);
+}
+
+.markflow-quick-open input {
+	padding: 0.6rem 0.8rem;
+	border-bottom: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+	background: transparent;
+	outline: none;
+}
+
+.markflow-quick-open ul {
+	overflow-y: auto;
+	font-size: 0.85rem;
+}
+
+.markflow-quick-open li {
+	overflow: hidden;
+	padding: 0.3rem 0.8rem;
+	cursor: default;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.markflow-quick-open li[aria-selected="true"] {
+	background: color-mix(in srgb, currentColor 14%, transparent);
+}
+
+.markflow-quick-open mark {
+	background: none;
+	color: inherit;
+	font-weight: 700;
+	text-decoration: underline;
+}
+
+.markflow-quick-open-empty {
+	opacity: 0.6;
+}
