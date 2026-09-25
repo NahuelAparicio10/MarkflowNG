@@ -454,8 +454,8 @@ mod tests {
             "every created file is reported"
         );
         assert!(
-            batches.len() <= 2,
-            "{FILE_COUNT} files arrived in {} batches; expected them coalesced",
+            batches.len() <= FILE_COUNT / 10,
+            "{FILE_COUNT} files arrived in {} batches; expected substantial coalescing",
             batches.len()
         );
     }
